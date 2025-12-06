@@ -30,6 +30,14 @@
         @keyframes textFadeIn { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
         @keyframes scaleOut { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(0.8); opacity: 0; } }
 
+        /* Elimination Effect Animations */
+        @keyframes floatUpFade {
+            0% { opacity: 0; transform: translateY(20px) scale(0.8); }
+            20% { opacity: 0.8; transform: translateY(0) scale(1.1); }
+            80% { opacity: 0.8; transform: translateY(-50px) scale(1); }
+            100% { opacity: 0; transform: translateY(-100px) scale(0.5); }
+        }
+
         .anim-slide-out { animation: slideOutRight 0.5s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards; }
         .anim-slide-in { animation: slideInLeft 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
         .anim-text-enter { animation: textFadeIn 0.5s ease-out forwards; opacity: 0; }
@@ -41,14 +49,8 @@
             background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
             border-right: 4px solid #10b981;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            position: relative;
-            overflow: hidden;
-            /* Flexbox Centering Fix */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            /* Padding handled by JS classes, but line-height ensures vertical balance */
-            line-height: normal;
+            position: relative; overflow: hidden;
+            display: flex; align-items: center; justify-content: center; line-height: normal;
         }
         .survivor-card-modern::before {
             content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
@@ -58,12 +60,19 @@
         @keyframes shine { 100% { transform: translateX(100%); } }
 
         .correct-answer-glow { border: 2px solid #34d399; box-shadow: 0 0 30px rgba(16, 185, 129, 0.4); }
-        .wrong-answer-glow { border: 2px solid #f87171; box-shadow: 0 0 30px rgba(248, 113, 113, 0.4); }
+        .progress-bg { position: absolute; top: 0; left: 0; bottom: 0; transition: width 1s ease-out; z-index: 0; opacity: 0.3; }
 
-        .progress-bg {
-            position: absolute; top: 0; left: 0; bottom: 0;
-            transition: width 1s ease-out; z-index: 0;
-            opacity: 0.3;
+        /* Dead Name Style */
+        .dead-name-float {
+            position: absolute;
+            color: #f87171; /* Red */
+            font-weight: bold;
+            font-size: 1.5rem;
+            text-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
+            pointer-events: none;
+            z-index: 50;
+            white-space: nowrap;
+            opacity: 0;
         }
     </style>
 </head>
@@ -71,6 +80,9 @@
 
 <div class="bg-digital"></div>
 <div class="bg-glow"></div>
+
+<!-- Container for floating dead names -->
+<div id="dead-zone" class="absolute inset-0 pointer-events-none z-50 overflow-hidden"></div>
 
 <!-- 1. WAITING -->
 <div id="view-waiting" class="z-10 flex flex-col items-center">
@@ -140,6 +152,10 @@
 
     socket.on('presenter_sync_full', (data) => {
         document.getElementById('stat-alive').innerText = Object.values(data.gameState.aliveCount || 0);
+
+        // FIX: Restore Total Players on Refresh
+        if(data.totalPlayers) document.getElementById('stat-players').innerText = data.totalPlayers;
+
         if (data.gameState.phase === 'QUESTION' || data.gameState.phase === 'REVIEW') {
             if(data.currentQuestion) {
                 renderQuestion(data.currentQuestion.index, data.currentQuestion.text, data.currentQuestion.options);
@@ -206,7 +222,13 @@
         });
     }
 
-    socket.on('reveal_answer', (d) => showCorrectAnswer(d.correctIndex, d.stats));
+    socket.on('reveal_answer', (d) => {
+        showCorrectAnswer(d.correctIndex, d.stats);
+        // Trigger Falling Names Effect if any died
+        if(d.recentDeadNames && d.recentDeadNames.length > 0) {
+            spawnDeadNames(d.recentDeadNames);
+        }
+    });
 
     function showCorrectAnswer(index, stats = []) {
         const total = stats.reduce((a,b) => a+b, 0);
@@ -225,6 +247,35 @@
                 progBar.style.backgroundColor = "rgba(239, 68, 68, 0.4)";
             }
         }
+    }
+
+    // --- NEW: FALLING NAMES EFFECT ---
+    function spawnDeadNames(names) {
+        const container = document.getElementById('dead-zone');
+
+        names.forEach((name, i) => {
+            setTimeout(() => {
+                const el = document.createElement('div');
+                el.innerText = name;
+                el.className = 'dead-name-float';
+
+                // Random Position
+                const left = Math.random() * 90 + 5; // 5% to 95%
+                const top = Math.random() * 80 + 10;  // 10% to 90%
+
+                el.style.left = `${left}%`;
+                el.style.top = `${top}%`;
+
+                // Random Duration & Scale
+                const dur = 2 + Math.random(); // 2s to 3s
+                el.style.animation = `floatUpFade ${dur}s ease-out forwards`;
+
+                container.appendChild(el);
+
+                // Cleanup
+                setTimeout(() => el.remove(), dur * 1000);
+            }, i * 30); // Fast stagger (30ms)
+        });
     }
 </script>
 </body>

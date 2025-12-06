@@ -13,7 +13,7 @@ const QUESTIONS = require('./questions.json');
 const DB_FILE = 'game-state.json';
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = "admin";
-const DEFAULT_DURATION = 30; // Changed name for clarity
+const DEFAULT_DURATION = 30;
 
 // --- STATE ---
 let gameState = {
@@ -70,13 +70,11 @@ gameLoop();
 
 function getAliveCount() { return Object.values(players).filter(p => p.isAlive).length; }
 
-// Updated: Accepts custom duration
 function startQuestion(index, customDuration = DEFAULT_DURATION) {
     if (index < 0 || index >= QUESTIONS.length) return;
 
     gameState.phase = 'QUESTION';
     gameState.currentQuestionIndex = index;
-    // Use custom duration or fallback to default
     gameState.timeRemaining = parseInt(customDuration) || DEFAULT_DURATION;
     gameState.presenterMode = 'GAME';
 
@@ -84,7 +82,6 @@ function startQuestion(index, customDuration = DEFAULT_DURATION) {
     saveState();
 
     const q = QUESTIONS[index];
-    // Send totalTime so clients show progress bar correctly if you have one
     const qPacket = { index, text: q.text, options: q.options, totalTime: gameState.timeRemaining };
     io.to('players').to('admin_room').to('presenter_room').emit('new_question', qPacket);
 }
@@ -93,6 +90,7 @@ function endQuestion() {
     gameState.phase = 'REVIEW';
     const correctIndex = QUESTIONS[gameState.currentQuestionIndex].correctIndex;
     let eliminatedCount = 0;
+    let recentDeadNames = []; // List of people who died THIS round
 
     const answerCounts = [0, 0, 0, 0];
     Object.values(players).forEach(p => {
@@ -109,6 +107,7 @@ function endQuestion() {
                 p.isAlive = false;
                 p.deathRound = gameState.currentQuestionIndex;
                 eliminatedCount++;
+                recentDeadNames.push(p.name); // Collect Name
             }
         }
     });
@@ -120,7 +119,8 @@ function endQuestion() {
         correctIndex,
         eliminatedThisRound: eliminatedCount,
         aliveCount: gameState.aliveCount,
-        stats: answerCounts
+        stats: answerCounts,
+        recentDeadNames: recentDeadNames // Send to clients
     };
 
     io.to('players').to('admin_room').to('presenter_room').emit('reveal_answer', revealPacket);
@@ -185,6 +185,7 @@ io.on('connection', (socket) => {
         socket.join('presenter_room');
         const packet = {
             gameState: gameState,
+            totalPlayers: Object.keys(players).length, // ADDED: Fix for refresh 0 bug
             alivePlayers: Object.values(players).filter(p => p.isAlive).map(p => ({ name: p.name }))
         };
         if (gameState.currentQuestionIndex > -1) {
@@ -209,7 +210,6 @@ io.on('connection', (socket) => {
     socket.on('admin_command', (cmd) => {
         if(!socket.rooms.has('admin_room')) return;
         switch (cmd.action) {
-            // Updated: Pass duration from payload
             case 'START_SPECIFIC': startQuestion(cmd.index, cmd.duration); break;
             case 'END_QUESTION_NOW': if (gameState.phase === 'QUESTION') endQuestion(); break;
             case 'RESET_ALL': resetGame(); break;
