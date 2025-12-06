@@ -1,0 +1,1419 @@
+{
+  "gameState": {
+    "phase": "REVIEW",
+    "currentQuestionIndex": 0,
+    "timeRemaining": 0,
+    "aliveCount": 49,
+    "presenterMode": "GAME",
+    "questionStats": {
+      "0": [
+        52,
+        49,
+        54,
+        45
+      ]
+    }
+  },
+  "players": {
+    "99000000": {
+      "name": "علی علوی",
+      "studentId": "99000000",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000001": {
+      "name": "بهنام کریمی",
+      "studentId": "99000001",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000002": {
+      "name": "امیر یزدانی",
+      "studentId": "99000002",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000003": {
+      "name": "نگین رحیمی",
+      "studentId": "99000003",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000004": {
+      "name": "امیر پور",
+      "studentId": "99000004",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": -1
+    },
+    "99000005": {
+      "name": "فرزاد رحیمی",
+      "studentId": "99000005",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000006": {
+      "name": "فرزاد پناه",
+      "studentId": "99000006",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000007": {
+      "name": "محمد هاشمی",
+      "studentId": "99000007",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": -1
+    },
+    "99000008": {
+      "name": "بهار دوست",
+      "studentId": "99000008",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000009": {
+      "name": "سهیل قاسمی",
+      "studentId": "99000009",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000010": {
+      "name": "زهرا یزدانی",
+      "studentId": "99000010",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000011": {
+      "name": "متین دهقان",
+      "studentId": "99000011",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": -1
+    },
+    "99000012": {
+      "name": "رویا فر",
+      "studentId": "99000012",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000013": {
+      "name": "احسان حیدری",
+      "studentId": "99000013",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000014": {
+      "name": "فرزاد عباسی",
+      "studentId": "99000014",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000015": {
+      "name": "فرزاد زارع",
+      "studentId": "99000015",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": -1
+    },
+    "99000016": {
+      "name": "سارا تبریزی",
+      "studentId": "99000016",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000017": {
+      "name": "فرشاد علوی",
+      "studentId": "99000017",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000018": {
+      "name": "فرشاد ابراهیمی",
+      "studentId": "99000018",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000019": {
+      "name": "حمید خانی",
+      "studentId": "99000019",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000020": {
+      "name": "شایان فراهانی",
+      "studentId": "99000020",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000021": {
+      "name": "حمید موسوی",
+      "studentId": "99000021",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000022": {
+      "name": "سارا عباسی",
+      "studentId": "99000022",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000023": {
+      "name": "محسن باقری",
+      "studentId": "99000023",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000024": {
+      "name": "بهار دوست",
+      "studentId": "99000024",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000025": {
+      "name": "رویا فراهانی",
+      "studentId": "99000025",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000026": {
+      "name": "نوید حیدری",
+      "studentId": "99000026",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000027": {
+      "name": "مازیار کریمی",
+      "studentId": "99000027",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000028": {
+      "name": "آرش کاظمی",
+      "studentId": "99000028",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": -1
+    },
+    "99000029": {
+      "name": "محسن فر",
+      "studentId": "99000029",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000030": {
+      "name": "بهنام زارع",
+      "studentId": "99000030",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000031": {
+      "name": "پریا حسینی",
+      "studentId": "99000031",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000032": {
+      "name": "پریا احمدی",
+      "studentId": "99000032",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000033": {
+      "name": "مهدی پناه",
+      "studentId": "99000033",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000034": {
+      "name": "محسن باقری",
+      "studentId": "99000034",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000035": {
+      "name": "عرفان سلیمانی",
+      "studentId": "99000035",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000036": {
+      "name": "امیر باقری",
+      "studentId": "99000036",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000037": {
+      "name": "محمد خسروی",
+      "studentId": "99000037",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": -1
+    },
+    "99000038": {
+      "name": "بابک رحیمی",
+      "studentId": "99000038",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000039": {
+      "name": "رویا یزدانی",
+      "studentId": "99000039",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000040": {
+      "name": "امیر حسینی",
+      "studentId": "99000040",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000041": {
+      "name": "رضا راد",
+      "studentId": "99000041",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000042": {
+      "name": "شهرام باقری",
+      "studentId": "99000042",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000043": {
+      "name": "بهنام حسینی",
+      "studentId": "99000043",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000044": {
+      "name": "فرشاد یزدانی",
+      "studentId": "99000044",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": -1
+    },
+    "99000045": {
+      "name": "زهرا علوی",
+      "studentId": "99000045",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000046": {
+      "name": "بهار شیرازی",
+      "studentId": "99000046",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000047": {
+      "name": "مهدی صدر",
+      "studentId": "99000047",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000048": {
+      "name": "محسن حسینی",
+      "studentId": "99000048",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000049": {
+      "name": "سینا اکبری",
+      "studentId": "99000049",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000050": {
+      "name": "امیر پور",
+      "studentId": "99000050",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000051": {
+      "name": "نگین فراهانی",
+      "studentId": "99000051",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000052": {
+      "name": "سهیل فراهانی",
+      "studentId": "99000052",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000053": {
+      "name": "حسین محمدی",
+      "studentId": "99000053",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000054": {
+      "name": "حمید دهقان",
+      "studentId": "99000054",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000055": {
+      "name": "زهرا صدر",
+      "studentId": "99000055",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000056": {
+      "name": "مازیار قاسمی",
+      "studentId": "99000056",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000057": {
+      "name": "سعید شیرازی",
+      "studentId": "99000057",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000058": {
+      "name": "نگین رضایی",
+      "studentId": "99000058",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000059": {
+      "name": "بابک نیا",
+      "studentId": "99000059",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000060": {
+      "name": "دانیال خسروی",
+      "studentId": "99000060",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000061": {
+      "name": "سینا فراهانی",
+      "studentId": "99000061",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000062": {
+      "name": "مریم رحیمی",
+      "studentId": "99000062",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000063": {
+      "name": "احسان باقری",
+      "studentId": "99000063",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": -1
+    },
+    "99000064": {
+      "name": "کامران صادقی",
+      "studentId": "99000064",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000065": {
+      "name": "بهنام زارع",
+      "studentId": "99000065",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000066": {
+      "name": "مهدی نجفی",
+      "studentId": "99000066",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000067": {
+      "name": "رضا علوی",
+      "studentId": "99000067",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000068": {
+      "name": "سعید نجفی",
+      "studentId": "99000068",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000069": {
+      "name": "آرش شریفی",
+      "studentId": "99000069",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000070": {
+      "name": "حسین حیدری",
+      "studentId": "99000070",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000071": {
+      "name": "سیاوش فراهانی",
+      "studentId": "99000071",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000072": {
+      "name": "هومن رضایی",
+      "studentId": "99000072",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000073": {
+      "name": "سارا دهقان",
+      "studentId": "99000073",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000074": {
+      "name": "نگین تهرانی",
+      "studentId": "99000074",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000075": {
+      "name": "مازیار عباسی",
+      "studentId": "99000075",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000076": {
+      "name": "شیوا فر",
+      "studentId": "99000076",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000077": {
+      "name": "محمد احمدی",
+      "studentId": "99000077",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000078": {
+      "name": "مریم موسوی",
+      "studentId": "99000078",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000079": {
+      "name": "سینا باقری",
+      "studentId": "99000079",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000080": {
+      "name": "سعید صادقی",
+      "studentId": "99000080",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000081": {
+      "name": "رویا تهرانی",
+      "studentId": "99000081",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000082": {
+      "name": "آرش خسروی",
+      "studentId": "99000082",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000083": {
+      "name": "فرشاد زارع",
+      "studentId": "99000083",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000084": {
+      "name": "شیوا دوست",
+      "studentId": "99000084",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000085": {
+      "name": "پیمان شریفی",
+      "studentId": "99000085",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000086": {
+      "name": "شایان احمدی",
+      "studentId": "99000086",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000087": {
+      "name": "کیمیا موسوی",
+      "studentId": "99000087",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000088": {
+      "name": "دانیال سلیمانی",
+      "studentId": "99000088",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000089": {
+      "name": "محسن پناه",
+      "studentId": "99000089",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000090": {
+      "name": "امیر پور",
+      "studentId": "99000090",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000091": {
+      "name": "نیما شریفی",
+      "studentId": "99000091",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000092": {
+      "name": "پریا شریفی",
+      "studentId": "99000092",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000093": {
+      "name": "کیمیا فراهانی",
+      "studentId": "99000093",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000094": {
+      "name": "نیما حیدری",
+      "studentId": "99000094",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000095": {
+      "name": "عرفان قاسمی",
+      "studentId": "99000095",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000096": {
+      "name": "زهرا فراهانی",
+      "studentId": "99000096",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000097": {
+      "name": "سهیل یزدانی",
+      "studentId": "99000097",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000098": {
+      "name": "بابک قاسمی",
+      "studentId": "99000098",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000099": {
+      "name": "شهرام نجفی",
+      "studentId": "99000099",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000100": {
+      "name": "نوید کاظمی",
+      "studentId": "99000100",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000101": {
+      "name": "سعید کاظمی",
+      "studentId": "99000101",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000102": {
+      "name": "زهرا حیدری",
+      "studentId": "99000102",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000103": {
+      "name": "سینا شریفی",
+      "studentId": "99000103",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000104": {
+      "name": "نوید یزدانی",
+      "studentId": "99000104",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000105": {
+      "name": "کامران خسروی",
+      "studentId": "99000105",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": -1
+    },
+    "99000106": {
+      "name": "محمد مرادی",
+      "studentId": "99000106",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000107": {
+      "name": "امیر حیدری",
+      "studentId": "99000107",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000108": {
+      "name": "سارا حسینی",
+      "studentId": "99000108",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000109": {
+      "name": "عرفان منش",
+      "studentId": "99000109",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000110": {
+      "name": "متین محمدی",
+      "studentId": "99000110",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000111": {
+      "name": "شیوا ابراهیمی",
+      "studentId": "99000111",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000112": {
+      "name": "مریم جعفری",
+      "studentId": "99000112",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000113": {
+      "name": "فرشاد قاسمی",
+      "studentId": "99000113",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000114": {
+      "name": "مهدی صدر",
+      "studentId": "99000114",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": -1
+    },
+    "99000115": {
+      "name": "نگین علوی",
+      "studentId": "99000115",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": -1
+    },
+    "99000116": {
+      "name": "پریا حسینی",
+      "studentId": "99000116",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000117": {
+      "name": "کیمیا منش",
+      "studentId": "99000117",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000118": {
+      "name": "دانیال نیا",
+      "studentId": "99000118",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000119": {
+      "name": "حسین ابراهیمی",
+      "studentId": "99000119",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000120": {
+      "name": "کامران تهرانی",
+      "studentId": "99000120",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000121": {
+      "name": "الناز یزدانی",
+      "studentId": "99000121",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": -1
+    },
+    "99000122": {
+      "name": "رویا یزدانی",
+      "studentId": "99000122",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000123": {
+      "name": "رویا احمدی",
+      "studentId": "99000123",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000124": {
+      "name": "سیاوش فراهانی",
+      "studentId": "99000124",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000125": {
+      "name": "سینا فر",
+      "studentId": "99000125",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000126": {
+      "name": "محمد مرادی",
+      "studentId": "99000126",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000127": {
+      "name": "پرهام خسروی",
+      "studentId": "99000127",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": -1
+    },
+    "99000128": {
+      "name": "امیر کریمی",
+      "studentId": "99000128",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000129": {
+      "name": "شیوا احمدی",
+      "studentId": "99000129",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000130": {
+      "name": "زهرا کریمی",
+      "studentId": "99000130",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000131": {
+      "name": "رویا حسینی",
+      "studentId": "99000131",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000132": {
+      "name": "شایان خسروی",
+      "studentId": "99000132",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000133": {
+      "name": "پریا نجفی",
+      "studentId": "99000133",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000134": {
+      "name": "پرهام سلیمانی",
+      "studentId": "99000134",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000135": {
+      "name": "سینا فراهانی",
+      "studentId": "99000135",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000136": {
+      "name": "حسین صادقی",
+      "studentId": "99000136",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000137": {
+      "name": "احسان رحیمی",
+      "studentId": "99000137",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000138": {
+      "name": "الناز رضایی",
+      "studentId": "99000138",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000139": {
+      "name": "آرش صادقی",
+      "studentId": "99000139",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000140": {
+      "name": "دانیال حیدری",
+      "studentId": "99000140",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000141": {
+      "name": "شیوا محمدی",
+      "studentId": "99000141",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000142": {
+      "name": "بهار پناه",
+      "studentId": "99000142",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000143": {
+      "name": "نیما شریفی",
+      "studentId": "99000143",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000144": {
+      "name": "شیوا دهقان",
+      "studentId": "99000144",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000145": {
+      "name": "دانیال علوی",
+      "studentId": "99000145",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000146": {
+      "name": "محسن دهقان",
+      "studentId": "99000146",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000147": {
+      "name": "حسین پور",
+      "studentId": "99000147",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000148": {
+      "name": "هومن دوست",
+      "studentId": "99000148",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000149": {
+      "name": "سعید موسوی",
+      "studentId": "99000149",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": -1
+    },
+    "99000150": {
+      "name": "حمید هاشمی",
+      "studentId": "99000150",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000151": {
+      "name": "مریم محمدی",
+      "studentId": "99000151",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": -1
+    },
+    "99000152": {
+      "name": "کیمیا قاسمی",
+      "studentId": "99000152",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000153": {
+      "name": "شیوا شیرازی",
+      "studentId": "99000153",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000154": {
+      "name": "حمید دوست",
+      "studentId": "99000154",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000155": {
+      "name": "سهیل تهرانی",
+      "studentId": "99000155",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000156": {
+      "name": "علی مرادی",
+      "studentId": "99000156",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000157": {
+      "name": "بهنام پور",
+      "studentId": "99000157",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000158": {
+      "name": "امیر موسوی",
+      "studentId": "99000158",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000159": {
+      "name": "آرش نجفی",
+      "studentId": "99000159",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000160": {
+      "name": "حسین شریفی",
+      "studentId": "99000160",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000161": {
+      "name": "مهدی عباسی",
+      "studentId": "99000161",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000162": {
+      "name": "کیمیا صدر",
+      "studentId": "99000162",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000163": {
+      "name": "عرفان زارع",
+      "studentId": "99000163",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000164": {
+      "name": "پریا تهرانی",
+      "studentId": "99000164",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000165": {
+      "name": "سینا صادقی",
+      "studentId": "99000165",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000166": {
+      "name": "حسین زارع",
+      "studentId": "99000166",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000167": {
+      "name": "پریا محمدی",
+      "studentId": "99000167",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000168": {
+      "name": "سینا دوست",
+      "studentId": "99000168",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000169": {
+      "name": "سارا قاسمی",
+      "studentId": "99000169",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000170": {
+      "name": "فرشاد رضایی",
+      "studentId": "99000170",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000171": {
+      "name": "شیوا شیرازی",
+      "studentId": "99000171",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000172": {
+      "name": "حمید نیا",
+      "studentId": "99000172",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000173": {
+      "name": "محسن کاظمی",
+      "studentId": "99000173",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000174": {
+      "name": "آرش رحیمی",
+      "studentId": "99000174",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000175": {
+      "name": "نگین سلیمانی",
+      "studentId": "99000175",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000176": {
+      "name": "رضا نیا",
+      "studentId": "99000176",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000177": {
+      "name": "فرشاد شریفی",
+      "studentId": "99000177",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000178": {
+      "name": "بهار پناه",
+      "studentId": "99000178",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000179": {
+      "name": "کیمیا فراهانی",
+      "studentId": "99000179",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000180": {
+      "name": "پریا اکبری",
+      "studentId": "99000180",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000181": {
+      "name": "نیما قاسمی",
+      "studentId": "99000181",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000182": {
+      "name": "مازیار مرادی",
+      "studentId": "99000182",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000183": {
+      "name": "متین محمدی",
+      "studentId": "99000183",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000184": {
+      "name": "رویا رضایی",
+      "studentId": "99000184",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000185": {
+      "name": "سارا شریفی",
+      "studentId": "99000185",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000186": {
+      "name": "احسان پور",
+      "studentId": "99000186",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000187": {
+      "name": "الناز منش",
+      "studentId": "99000187",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000188": {
+      "name": "کیمیا باقری",
+      "studentId": "99000188",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": 0
+    },
+    "99000189": {
+      "name": "بهنام عباسی",
+      "studentId": "99000189",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000190": {
+      "name": "محسن محمدی",
+      "studentId": "99000190",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000191": {
+      "name": "کیمیا علوی",
+      "studentId": "99000191",
+      "isAlive": true,
+      "currentAnswer": 1,
+      "deathRound": -1
+    },
+    "99000192": {
+      "name": "نیما فر",
+      "studentId": "99000192",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000193": {
+      "name": "محسن دوست",
+      "studentId": "99000193",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000194": {
+      "name": "نگین مرادی",
+      "studentId": "99000194",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000195": {
+      "name": "بهنام شیرازی",
+      "studentId": "99000195",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    },
+    "99000196": {
+      "name": "سینا نیا",
+      "studentId": "99000196",
+      "isAlive": false,
+      "currentAnswer": 0,
+      "deathRound": 0
+    },
+    "99000197": {
+      "name": "نگین زارع",
+      "studentId": "99000197",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000198": {
+      "name": "حمید زاده",
+      "studentId": "99000198",
+      "isAlive": false,
+      "currentAnswer": 2,
+      "deathRound": 0
+    },
+    "99000199": {
+      "name": "سعید علوی",
+      "studentId": "99000199",
+      "isAlive": false,
+      "currentAnswer": 3,
+      "deathRound": 0
+    }
+  }
+}

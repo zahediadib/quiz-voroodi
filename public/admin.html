@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پنل مدیریت</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/sahel-font@v3.4.0/dist/font-face.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700;900&display=swap');
+        body { font-family: 'Sahel', sans-serif; }
+        .stat-bar { transition: width 0.5s ease; }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen flex flex-col p-4" onclick="closeDropdowns(event)">
+
+<!-- Auth -->
+<div id="auth-modal" class="fixed inset-0 bg-gray-900 bg-opacity-90 flex items-center justify-center z-50">
+    <div class="bg-white p-6 rounded shadow-lg text-center">
+        <h2 class="text-xl font-bold mb-4">رمز عبور ادمین</h2>
+        <input type="password" id="admin-pass" class="border p-2 rounded w-full mb-2">
+        <button onclick="auth()" class="bg-blue-600 text-white px-4 py-2 rounded w-full">ورود</button>
+    </div>
+</div>
+
+<!-- Interface -->
+<div id="admin-interface" class="hidden flex-col h-full">
+    <div class="bg-white p-3 rounded shadow mb-2 flex justify-between items-center shrink-0">
+        <div class="flex items-center gap-4">
+            <h1 class="text-lg font-bold">پنل مدیریت</h1>
+            <span id="adm-phase-badge" class="px-2 py-1 bg-gray-200 rounded text-xs font-mono">PHASE</span>
+        </div>
+        <div class="flex gap-2">
+            <div class="relative">
+                <button id="btn-revive-menu" onclick="toggleReviveMenu(event)" class="bg-pink-600 text-white px-3 py-1 rounded text-sm hover:bg-pink-700">
+                    <i class="fa-solid fa-heart-pulse mr-1"></i> ریوایو
+                </button>
+                <div id="revive-dropdown" class="absolute left-0 top-full mt-1 bg-white border shadow-lg rounded hidden w-56 z-50">
+                    <button onclick="reviveAll()" class="block w-full text-right px-4 py-2 hover:bg-gray-100 text-sm"><i class="fa-solid fa-users-medical ml-2 text-gray-500"></i>ریوایو همه مردگان</button>
+                    <button onclick="reviveRound()" class="block w-full text-right px-4 py-2 hover:bg-gray-100 text-sm"><i class="fa-solid fa-clock-rotate-left ml-2 text-gray-500"></i>ریوایو حذف شدگان اخیر</button>
+                </div>
+            </div>
+            <button id="btn-toggle-presenter" onclick="togglePresenterList()" class="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700 w-40">
+                <i class="fa-solid fa-gamepad mr-1"></i> نمایش: بازی
+            </button>
+            <button onclick="resetEverything()" class="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700">
+                <i class="fa-solid fa-triangle-exclamation mr-1"></i> ریست کلی
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 flex-grow overflow-hidden">
+        <!-- Left: Controls -->
+        <div class="md:col-span-5 flex flex-col gap-2 overflow-hidden h-full">
+            <div class="bg-blue-50 p-4 rounded border shrink-0">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="font-bold"><i class="fa-regular fa-clock ml-1"></i>تایمر</span>
+                    <span class="text-2xl font-bold text-blue-600 font-mono" id="adm-timer">0.0</span>
+                </div>
+                <div class="flex gap-2 items-center">
+                    <select id="adm-q-select" class="flex-grow border rounded p-2 text-sm h-10"></select>
+                    <select id="adm-time-select" class="border rounded p-2 text-sm h-10 w-20 text-center font-bold">
+                        <option value="10">10s</option>
+                        <option value="15">15s</option>
+                        <option value="20">20s</option>
+                        <option value="30" selected>30s</option>
+                    </select>
+                    <button onclick="adminStartSelected()" class="bg-green-600 text-white w-12 h-10 rounded hover:bg-green-700 flex items-center justify-center">
+                        <i class="fa-solid fa-play"></i>
+                    </button>
+                </div>
+                <button id="btn-end-q" onclick="socket.emit('admin_command', {action:'END_QUESTION_NOW'})" class="hidden w-full bg-orange-500 text-white py-2 rounded font-bold mt-2 hover:bg-orange-600">
+                    <i class="fa-solid fa-stop mr-1"></i> پایان سوال
+                </button>
+            </div>
+
+            <div class="bg-white p-4 rounded border flex-grow overflow-y-auto relative">
+                <h3 class="text-gray-500 text-sm mb-2 border-b"><i class="fa-solid fa-eye ml-1"></i>پیش‌نمایش و آمار:</h3>
+                <p id="adm-prev-text" class="font-bold mb-4 text-lg">...</p>
+                <div id="adm-prev-opts" class="space-y-2 text-sm"></div>
+            </div>
+        </div>
+
+        <!-- Right: Players -->
+        <div class="md:col-span-7 bg-white rounded border flex flex-col h-full overflow-hidden">
+            <div class="p-2 border-b bg-gray-50 grid grid-cols-4 gap-2 text-center text-xs" id="adm-stats-bar"></div>
+            <div class="p-3 border-b bg-gray-50 flex justify-between items-center shrink-0">
+                <h2 class="font-bold"><i class="fa-solid fa-users ml-1"></i>شرکت کنندگان</h2>
+                <span class="bg-blue-100 text-blue-800 px-2 rounded text-sm">زنده: <span id="adm-alive-count">0</span></span>
+            </div>
+            <div class="overflow-y-auto flex-grow p-2">
+                <table class="w-full text-sm">
+                    <thead class="sticky top-0 bg-white shadow-sm">
+                    <tr class="text-right border-b text-gray-500"><th class="pb-2">نام</th><th>ID</th><th>پاسخ</th><th>وضعیت</th><th>عملیات</th></tr>
+                    </thead>
+                    <tbody id="adm-player-list"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const socket = io();
+    let allQuestions = [];
+    let currentPresenterMode = 'GAME';
+    let savedQuestionStats = {};
+
+    socket.on('connect', () => { const savedPass = localStorage.getItem('admin_pass'); if(savedPass) { document.getElementById('admin-pass').value = savedPass; auth(); } });
+
+    function auth() { const pass = document.getElementById('admin-pass').value; if(!pass) return; socket.emit('admin_auth', pass); }
+
+    socket.on('admin_auth_success', () => {
+        localStorage.setItem('admin_pass', document.getElementById('admin-pass').value);
+        document.getElementById('auth-modal').classList.add('hidden');
+        document.getElementById('admin-interface').classList.remove('hidden');
+        document.getElementById('admin-interface').classList.add('flex');
+        startPolling();
+    });
+
+    socket.on('admin_auth_fail', () => { document.getElementById('auth-modal').classList.remove('hidden'); alert('رمز اشتباه است'); });
+
+    let pollInterval;
+    function startPolling() { if(pollInterval) clearInterval(pollInterval); pollInterval = setInterval(() => socket.emit('request_admin_data'), 2000); socket.emit('request_admin_data'); }
+
+    socket.on('sync_pulse', (data) => { document.getElementById('adm-timer').innerText = data.time; document.getElementById('adm-alive-count').innerText = data.aliveCount; });
+
+    socket.on('admin_data', (data) => {
+        document.getElementById('adm-phase-badge').innerText = data.gameState.phase;
+        currentPresenterMode = data.gameState.presenterMode;
+        savedQuestionStats = data.gameState.questionStats || {};
+
+        const pBtn = document.getElementById('btn-toggle-presenter');
+        if (currentPresenterMode === 'GAME') {
+            pBtn.innerHTML = '<i class="fa-solid fa-gamepad mr-1"></i> نمایش: بازی';
+            pBtn.className = "bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700 w-40";
+        } else {
+            pBtn.innerHTML = '<i class="fa-solid fa-list-ol mr-1"></i> نمایش: لیست';
+            pBtn.className = "bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 w-40";
+        }
+
+        const stats = [0,0,0,0];
+        let totalAnswers = 0;
+        const playersArr = Object.values(data.players);
+        playersArr.sort((a, b) => (b.isAlive === a.isAlive) ? 0 : b.isAlive ? 1 : -1);
+
+        const list = document.getElementById('adm-player-list');
+        list.innerHTML = '';
+
+        // Current Question Index for Death Logic Check
+        const currentQIdx = data.gameState.currentQuestionIndex;
+
+        playersArr.forEach(p => {
+            // FIXED LOGIC: Count if alive OR if died in THIS round
+            const showAnswer = (p.isAlive || p.deathRound === currentQIdx) && p.currentAnswer !== null;
+
+            if(showAnswer) {
+                stats[p.currentAnswer]++;
+                totalAnswers++;
+            }
+
+            const tr = document.createElement('tr');
+            tr.className = p.isAlive ? 'bg-green-50' : 'bg-red-50 text-gray-400';
+
+            let actions = `<button onclick="kick('${p.studentId}')" class="text-red-500 mx-1" title="حذف"><i class="fa-solid fa-trash-can"></i></button>`;
+            if (!p.isAlive) actions += `<button onclick="reviveOne('${p.studentId}')" class="text-pink-500 mx-1" title="احیا"><i class="fa-solid fa-heart-pulse"></i></button>`;
+
+            let ansDisplay = '-';
+            // Show answer if Alive OR just died this round
+            if(showAnswer) {
+                ansDisplay = `<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold">${parseInt(p.currentAnswer)+1}</span>`;
+            }
+
+            tr.innerHTML = `<td class="p-2 border-b">${p.name}</td><td class="p-2 border-b font-mono text-xs">${p.studentId}</td><td class="p-2 border-b">${ansDisplay}</td><td class="p-2 border-b font-bold ${p.isAlive?'text-green-700':'text-red-700'}">${p.isAlive?'زنده':'حذف'}</td><td class="p-2 border-b">${actions}</td>`;
+            list.appendChild(tr);
+        });
+
+        // Stats Bar Calculation
+        const statsBar = document.getElementById('adm-stats-bar');
+        let statsHtml = stats.map((count, i) => {
+            const pct = totalAnswers > 0 ? Math.round((count/totalAnswers)*100) : 0;
+            return `<div class="bg-gray-200 rounded p-1"><span class="font-bold block">گزینه ${i+1}</span><span class="text-blue-600">${count} (${pct}%)</span></div>`;
+        }).join('');
+
+        statsHtml += `<div class="col-span-4 mt-1 bg-blue-50 border border-blue-200 rounded p-1 text-center"><span class="font-bold text-blue-800">مجموع آرا: ${totalAnswers}</span></div>`;
+
+        statsBar.innerHTML = statsHtml;
+
+        if(data.gameState.phase === 'QUESTION') document.getElementById('btn-end-q').classList.remove('hidden');
+        else document.getElementById('btn-end-q').classList.add('hidden');
+
+        if(allQuestions.length === 0) {
+            allQuestions = data.allQuestions;
+            const sel = document.getElementById('adm-q-select');
+            allQuestions.forEach((q, i) => {
+                const opt = document.createElement('option');
+                opt.value = i; opt.text = `سوال ${i+1}: ${q.text.substring(0,20)}...`; sel.appendChild(opt);
+            });
+            sel.onchange = updatePreview;
+            updatePreview();
+        } else {
+            updatePreview();
+        }
+    });
+
+    function updatePreview() {
+        const idx = document.getElementById('adm-q-select').value;
+        if (idx === "") return;
+        const q = allQuestions[idx];
+        document.getElementById('adm-prev-text').innerText = q.text;
+
+        const stats = savedQuestionStats[idx];
+        let total = 0;
+        if (stats) total = stats.reduce((a,b) => a+b, 0);
+
+        let optsHtml = q.options.map((o,i) => {
+            let bgStyle = '';
+            let statText = '';
+
+            if (stats) {
+                const count = stats[i];
+                const pct = total > 0 ? Math.round((count/total)*100) : 0;
+                const color = (i === q.correctIndex) ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)';
+                bgStyle = `background: linear-gradient(to left, ${color} ${pct}%, transparent ${pct}%);`;
+                statText = `<span class="float-left font-bold text-xs bg-gray-100 px-1 rounded ml-2">${count} رای (${pct}%)</span>`;
+            }
+
+            const borderClass = (i === q.correctIndex) ? 'border-green-500 bg-green-50' : 'border-gray-200';
+            const checkMark = (i === q.correctIndex) ? '<i class="fa-solid fa-check text-green-600"></i>' : '';
+
+            return `
+                <div class="p-2 border rounded mb-1 relative overflow-hidden ${borderClass}" style="${bgStyle}">
+                    <span class="font-bold">${i+1}.</span> ${o} ${statText}
+                    ${checkMark}
+                </div>`;
+        }).join('');
+
+        if (stats) {
+            optsHtml += `<div class="mt-2 text-center text-xs font-bold text-gray-500 border-t pt-2">مجموع کل آرا ثبت شده برای این سوال: ${total}</div>`;
+        }
+
+        document.getElementById('adm-prev-opts').innerHTML = optsHtml;
+    }
+
+    function toggleReviveMenu(e) { e.stopPropagation(); document.getElementById('revive-dropdown').classList.toggle('hidden'); }
+    function closeDropdowns(e) { if(!e.target.closest('#btn-revive-menu')) document.getElementById('revive-dropdown').classList.add('hidden'); }
+
+    function adminStartSelected() {
+        const duration = document.getElementById('adm-time-select').value;
+        socket.emit('admin_command', {
+            action: 'START_SPECIFIC',
+            index: parseInt(document.getElementById('adm-q-select').value),
+            duration: parseInt(duration)
+        });
+    }
+
+    function togglePresenterList() { socket.emit('admin_command', { action: 'TOGGLE_PRESENTER_VIEW', mode: currentPresenterMode === 'GAME' ? 'ALIVE_LIST' : 'GAME' }); }
+    function kick(id) { if(confirm('حذف؟')) socket.emit('admin_command', { action: 'KICK_PLAYER', studentId: id }); }
+    function reviveOne(id) { if(confirm('ریوایو؟')) socket.emit('admin_command', { action: 'REVIVE_PLAYER', studentId: id }); }
+    function reviveAll() { if(confirm('ریوایو همه؟')) socket.emit('admin_command', { action: 'REVIVE_ALL' }); }
+    function reviveRound() { if(confirm('ریوایو حذف شدگان اخیر؟')) socket.emit('admin_command', { action: 'REVIVE_ROUND' }); }
+    function resetEverything() { if(confirm('Reset all?')) socket.emit('admin_command', { action: 'RESET_ALL' }); }
+</script>
+</body>
+</html>

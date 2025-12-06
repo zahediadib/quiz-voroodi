@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>مسابقه</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for Player (Trophy/Skull) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700;900&display=swap');
+        body { font-family: 'Vazirmatn', sans-serif; user-select: none; background-color: #f3f4f6; }
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .option-btn { transition: transform 0.1s, background-color 0.2s; touch-action: manipulation; }
+        .option-btn:active { transform: scale(0.97); }
+        .selected-opt { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important; color: white !important; border-color: transparent !important; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); }
+        .selected-opt .num-badge { background: rgba(255,255,255,0.2) !important; color: white !important; }
+        .correct-opt { background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important; color: white !important; border-color: transparent !important; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4); animation: pulseSuccess 1.5s infinite; }
+        .correct-opt .num-badge { background: white !important; color: #059669 !important; }
+        .wrong-opt { background: #fee2e2 !important; color: #991b1b !important; border-color: #fca5a5 !important; }
+        @keyframes pulseSuccess { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body class="h-[100dvh] w-full overflow-hidden flex flex-col">
+<div id="screen-loading" class="absolute inset-0 bg-white z-50 flex items-center justify-center"><div class="animate-spin text-4xl text-indigo-600"><i class="fa-solid fa-circle-notch"></i></div></div>
+
+<div id="screen-login" class="hidden flex-grow flex flex-col items-center justify-center p-6 w-full max-w-md mx-auto">
+    <div class="w-full bg-white p-8 rounded-3xl shadow-xl border border-gray-100">
+        <h1 class="text-3xl font-black mb-8 text-center text-gray-800">ورود به مسابقه</h1>
+        <input type="text" id="inp-name" placeholder="نام و نام خانوادگی" class="w-full bg-gray-50 border border-gray-200 p-4 rounded-2xl mb-4 text-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+        <!-- Updated Input Logic -->
+        <input type="number" id="inp-sid" placeholder="شماره دانشجویی"
+               oninput="if(this.value.length > 9) this.value = this.value.slice(0, 9);"
+               onkeydown="if(this.value.length >= 9 && event.key !== 'Backspace' && event.key !== 'Delete' && !isNaN(Number(event.key))) event.preventDefault();"
+               class="w-full bg-gray-50 border border-gray-200 p-4 rounded-2xl mb-8 text-lg dir-ltr text-center font-mono tracking-widest focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+        <button onclick="register()" class="w-full bg-indigo-600 text-white p-4 rounded-2xl font-bold text-lg shadow-lg shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all">شروع</button>
+        <p id="login-error" class="text-red-500 mt-4 text-sm text-center font-bold hidden bg-red-50 p-3 rounded-xl"></p>
+    </div>
+</div>
+
+<div id="screen-waiting" class="hidden flex-grow flex flex-col items-center justify-center p-6 text-center">
+    <div class="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center mb-6 animate-pulse text-5xl text-indigo-600"><i class="fa-solid fa-hourglass-half"></i></div>
+    <h2 class="text-2xl font-bold mb-2 text-gray-800">سلام <span id="p-name-display" class="text-indigo-600"></span></h2>
+    <p class="text-gray-500 mb-12">منتظر سوال بعدی باشید...</p>
+    <button onclick="logout()" class="text-gray-400 text-sm">خروج</button>
+</div>
+
+<div id="screen-game" class="hidden h-full flex flex-col p-4 max-w-lg mx-auto w-full">
+    <div class="flex justify-between items-center bg-white p-4 rounded-3xl shadow-sm mb-4 border border-gray-100 shrink-0">
+        <div class="flex flex-col"><span class="text-xs text-gray-400 font-bold uppercase">Time</span><span class="text-3xl font-black text-indigo-600 font-mono" id="p-timer">30.0</span></div>
+        <div class="bg-gray-100 px-4 py-2 rounded-2xl"><span class="text-sm font-bold text-gray-600">Q <span id="p-q-num">1</span></span></div>
+    </div>
+    <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-4 shrink-0"><h3 id="p-q-text" class="text-lg font-bold leading-relaxed text-gray-800 text-center">...</h3></div>
+    <div id="p-options" class="grid grid-cols-1 gap-3 flex-grow content-start overflow-y-auto pb-4 px-1"></div>
+    <div id="p-feedback" class="hidden mt-2 p-4 text-center font-bold rounded-2xl text-lg shadow-lg shrink-0 safe-area"></div>
+</div>
+
+<div id="screen-dead" class="hidden flex-grow flex flex-col items-center justify-center p-6 text-center bg-gray-50">
+    <div class="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mb-6 text-5xl text-red-600 shadow-inner"><i class="fa-solid fa-skull"></i></div>
+    <h2 class="text-3xl font-black text-gray-800 mb-2">حذف شدید</h2>
+    <p id="dead-reason" class="text-gray-500 mb-8">متاسفانه پاسخ اشتباه بود.</p>
+</div>
+
+<div id="screen-win" class="hidden flex-grow flex flex-col items-center justify-center p-6 text-center bg-indigo-50">
+    <div class="text-7xl mb-6 animate-bounce text-yellow-500"><i class="fa-solid fa-trophy"></i></div>
+    <h2 class="text-3xl font-black text-indigo-900 mb-2">قهرمــان!</h2>
+    <p class="text-indigo-700">تبریک! شما برنده شدید.</p>
+</div>
+
+<script>
+    const socket = io();
+    let myStudentId = null, isAlive = true, selectedOptionIndex = null, deathTimer = null, isLocked = false;
+
+    function showScreen(name) { ['loading', 'login', 'waiting', 'game', 'dead', 'win'].forEach(s => document.getElementById(`screen-${s}`).classList.add('hidden')); document.getElementById(`screen-${name}`).classList.remove('hidden'); }
+
+    socket.on('connect', () => { const savedId = localStorage.getItem('trivia_sid'); if (savedId) socket.emit('reconnect_attempt_user', savedId); else showScreen('login'); });
+
+    socket.on('force_disconnect', () => { localStorage.removeItem('trivia_sid'); window.location.reload(); });
+
+    socket.on('player_revived', (data) => {
+        let amI = (data.type === 'all') || (data.type === 'single' && data.id === myStudentId) || (data.type === 'list' && data.ids.includes(myStudentId));
+        if (amI) { if (deathTimer) clearTimeout(deathTimer); isAlive = true; socket.emit('reconnect_attempt_user', myStudentId); }
+    });
+
+    socket.on('reconnect_result', (data) => {
+        if (data.success) {
+            const p = data.player; myStudentId = p.studentId; isAlive = p.isAlive; document.getElementById('p-name-display').innerText = p.name;
+            if (!isAlive) { document.getElementById('dead-reason').innerText = "شما از دور مسابقه خارج شدید."; showScreen('dead'); return; }
+            if (data.gameState.currentQuestionIndex > -1 && data.currentQuestion) {
+                isLocked = (data.gameState.phase === 'REVIEW');
+                setupQuestion(data.gameState.currentQuestionIndex, data.currentQuestion.text, data.currentQuestion.options);
+                if (p.currentAnswer !== null) submitAnswer(p.currentAnswer, false);
+                if (data.gameState.phase === 'REVIEW' && typeof data.correctIndex !== 'undefined') revealResult(data.correctIndex, p.currentAnswer, true);
+                showScreen('game');
+            } else showScreen('waiting');
+        } else { localStorage.removeItem('trivia_sid'); showScreen('login'); }
+    });
+
+    function register() { const name = document.getElementById('inp-name').value, sid = document.getElementById('inp-sid').value; if(!name || sid.length < 8) return showError("اطلاعات نامعتبر است"); socket.emit('register', { name, studentId: sid }); }
+    function logout() { if(confirm('خروج؟')) { localStorage.removeItem('trivia_sid'); window.location.reload(); } }
+    function showError(msg) { document.getElementById('login-error').innerText = msg; document.getElementById('login-error').classList.remove('hidden'); }
+
+    function setupQuestion(index, text, options) {
+        selectedOptionIndex = null; isLocked = false;
+        document.getElementById('p-q-num').innerText = index + 1; document.getElementById('p-q-text').innerText = text;
+        const container = document.getElementById('p-options'); container.innerHTML = '';
+        options.forEach((opt, idx) => {
+            const btn = document.createElement('div'); btn.id = `opt-${idx}`;
+            btn.className = "option-btn bg-white border border-gray-200 p-4 rounded-2xl font-bold text-gray-700 shadow-sm flex items-center cursor-pointer mb-3";
+            btn.innerHTML = `<span class="num-badge bg-gray-100 text-gray-500 w-10 h-10 rounded-full flex items-center justify-center ml-4 text-lg font-bold transition-colors">${idx+1}</span> ${opt}`;
+            btn.onclick = () => submitAnswer(idx, true); container.appendChild(btn);
+        });
+        document.getElementById('p-feedback').classList.add('hidden');
+    }
+
+    function submitAnswer(idx, emit = true) {
+        if ((selectedOptionIndex !== null && emit) || isLocked) return;
+        selectedOptionIndex = idx;
+        const btn = document.getElementById(`opt-${idx}`); if(btn) btn.classList.add('selected-opt');
+        const container = document.getElementById('p-options'); for(let child of container.children) child.style.pointerEvents = 'none';
+        if (emit) socket.emit('submit_answer', idx);
+    }
+
+    socket.on('registered_success', (data) => { myStudentId = data.studentId; localStorage.setItem('trivia_sid', myStudentId); document.getElementById('p-name-display').innerText = data.name; showScreen('waiting'); });
+    socket.on('new_question', (data) => { if(!myStudentId || !isAlive) return; setupQuestion(data.index, data.text, data.options); showScreen('game'); });
+    socket.on('reveal_answer', (data) => { if(!myStudentId || !isAlive) return; isLocked = true; revealResult(data.correctIndex, selectedOptionIndex, false); });
+
+    function revealResult(correctIdx, myIdx, fromReconnect = false) {
+        const correctEl = document.getElementById(`opt-${correctIdx}`), myEl = document.getElementById(`opt-${myIdx}`), fb = document.getElementById('p-feedback');
+        const container = document.getElementById('p-options'); for(let child of container.children) child.style.pointerEvents = 'none';
+        if(correctEl) correctEl.classList.add('correct-opt');
+        if (myIdx !== correctIdx) {
+            if(myEl) myEl.classList.add('wrong-opt');
+            if (!fromReconnect) isAlive = false;
+            if (!isAlive) {
+                document.getElementById('dead-reason').innerText = (myIdx === null || myIdx === undefined) ? "زمان تمام شد!" : "پاسخ اشتباه بود!";
+                fb.innerText = "حذف شدید 💀"; fb.classList.remove('hidden'); fb.className = "mt-2 p-4 text-center font-bold rounded-2xl text-lg shadow-lg shrink-0 safe-area bg-red-500 text-white fade-in";
+                deathTimer = setTimeout(() => showScreen('dead'), 2500);
+            } else {
+                // UPDATED MESSAGE HERE
+                fb.innerText = "به بازی برگردانده شدید ❤️"; fb.classList.remove('hidden'); fb.className = "mt-2 p-4 text-center font-bold rounded-2xl text-lg shadow-lg shrink-0 safe-area bg-pink-500 text-white fade-in";
+            }
+        } else {
+            fb.innerText = "صحیح! 👏"; fb.classList.remove('hidden'); fb.className = "mt-2 p-4 text-center font-bold rounded-2xl text-lg shadow-lg shrink-0 safe-area bg-green-500 text-white fade-in";
+        }
+    }
+    socket.on('sync_pulse', (data) => { if(myStudentId && isAlive) document.getElementById('p-timer').innerText = data.time; });
+    socket.on('system_reset', () => { localStorage.removeItem('trivia_sid'); window.location.reload(); });
+</script>
+</body>
+</html>

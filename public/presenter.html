@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>صفحه نمایش</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Lalezar&display=swap');
+
+        body { font-family: 'Vazirmatn', sans-serif; overflow: hidden; }
+        .font-digital { font-family: 'Orbitron', sans-serif; }
+        .font-title { font-family: 'Lalezar', sans-serif; }
+
+        .bg-digital {
+            background-color: #0f172a;
+            background-image: linear-gradient(rgba(16, 185, 129, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 185, 129, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: moveGrid 30s linear infinite;
+            position: absolute; inset: 0; z-index: 0;
+        }
+        .bg-glow { position: absolute; inset: 0; z-index: 1; background: radial-gradient(circle at center, rgba(16, 185, 129, 0.05) 0%, rgba(15, 23, 42, 1) 90%); }
+        @keyframes moveGrid { 0% { background-position: 0 0; } 100% { background-position: 100px 100px; } }
+
+        @keyframes slideOutRight { 0% { transform: translateX(0); opacity: 1; } 100% { transform: translateX(100vw); opacity: 0; } }
+        @keyframes slideInLeft { 0% { transform: translateX(-100vw); opacity: 0; } 100% { transform: translateX(0); opacity: 1; } }
+        @keyframes textFadeIn { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
+        @keyframes scaleOut { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(0.8); opacity: 0; } }
+
+        .anim-slide-out { animation: slideOutRight 0.5s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards; }
+        .anim-slide-in { animation: slideInLeft 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+        .anim-text-enter { animation: textFadeIn 0.5s ease-out forwards; opacity: 0; }
+        .anim-list-exit { animation: scaleOut 0.4s ease-in forwards; }
+
+        .glass-panel { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); }
+
+        .survivor-card-modern {
+            background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+            border-right: 4px solid #10b981;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+            /* Flexbox Centering Fix */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Padding handled by JS classes, but line-height ensures vertical balance */
+            line-height: normal;
+        }
+        .survivor-card-modern::before {
+            content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: translateX(-100%); animation: shine 3s infinite;
+        }
+        @keyframes shine { 100% { transform: translateX(100%); } }
+
+        .correct-answer-glow { border: 2px solid #34d399; box-shadow: 0 0 30px rgba(16, 185, 129, 0.4); }
+        .wrong-answer-glow { border: 2px solid #f87171; box-shadow: 0 0 30px rgba(248, 113, 113, 0.4); }
+
+        .progress-bg {
+            position: absolute; top: 0; left: 0; bottom: 0;
+            transition: width 1s ease-out; z-index: 0;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white h-screen flex flex-col items-center justify-center relative overflow-hidden">
+
+<div class="bg-digital"></div>
+<div class="bg-glow"></div>
+
+<!-- 1. WAITING -->
+<div id="view-waiting" class="z-10 flex flex-col items-center">
+    <h1 class="text-9xl mb-12 text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-blue-500 to-purple-500 font-title drop-shadow-[0_5px_5px_rgba(0,0,0,0.5)]">مسابقــه بــزرگ</h1>
+    <div class="glass-panel px-16 py-8 rounded-2xl flex flex-col items-center">
+        <span class="text-3xl text-gray-300 font-title mb-4">شرکت کنندگان</span>
+        <div class="text-8xl font-digital font-bold text-yellow-400 drop-shadow-lg" id="stat-players">0</div>
+    </div>
+</div>
+
+<!-- 2. GAME -->
+<div id="view-game" class="hidden w-full max-w-7xl z-10 px-8 absolute inset-0 m-auto h-fit flex flex-col justify-center">
+    <div id="game-container">
+        <div class="flex justify-between items-end mb-10 pb-4 border-b border-white/10 anim-text-enter" style="animation-delay: 0.1s;">
+            <div class="flex items-center gap-4">
+                <span class="bg-blue-600/80 backdrop-blur px-4 py-1 rounded text-sm font-bold uppercase tracking-widest shadow-lg shadow-blue-900/50">Question</span>
+                <span id="q-num" class="text-6xl font-digital text-white font-bold">1</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="text-gray-400 text-sm uppercase tracking-widest mb-2">Time Left</span>
+                <span id="q-timer" class="text-8xl font-digital font-bold text-yellow-400 tabular-nums drop-shadow-lg">30.0</span>
+            </div>
+        </div>
+        <h2 id="q-text" class="text-5xl font-bold leading-tight mb-16 text-center drop-shadow-2xl min-h-[140px] flex items-center justify-center anim-text-enter" style="animation-delay: 0.3s;">...</h2>
+        <div id="q-opts" class="grid grid-cols-2 gap-8 text-3xl anim-text-enter" style="animation-delay: 0.5s;"></div>
+        <div class="mt-16 flex justify-center anim-text-enter" style="animation-delay: 0.7s;">
+            <div class="glass-panel px-10 py-4 rounded-full flex items-center gap-6">
+                <div class="w-4 h-4 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]"></div>
+                <span class="text-gray-300 uppercase text-lg tracking-widest font-bold">Survivors</span>
+                <span id="stat-alive" class="font-digital text-4xl font-bold text-white">0</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 3. LIST -->
+<div id="view-list" class="hidden absolute inset-0 z-20 bg-slate-900/95 backdrop-blur-2xl flex flex-col p-12 overflow-hidden transition-all duration-500">
+    <div class="shrink-0 flex items-center justify-between mb-10 border-b border-white/10 pb-6 anim-text-enter">
+        <h2 class="text-6xl font-title text-transparent bg-clip-text bg-gradient-to-l from-emerald-300 to-green-500">قهرمانـان باقیمانـده</h2>
+        <div class="font-digital text-5xl text-emerald-400 border border-emerald-500/30 px-8 py-3 rounded-xl bg-emerald-900/20 shadow-lg"><span id="list-total">0</span></div>
+    </div>
+    <div id="list-grid" class="flex flex-wrap gap-6 content-start justify-center overflow-y-auto pb-20 px-4"></div>
+</div>
+
+<script>
+    const socket = io();
+    socket.emit('presenter_join');
+    socket.on('stats_update', (d) => document.getElementById('stat-players').innerText = d.totalPlayers);
+
+    socket.on('sync_pulse', (d) => {
+        document.getElementById('q-timer').innerText = d.time;
+        document.getElementById('stat-alive').innerText = d.aliveCount;
+        const listEl = document.getElementById('view-list');
+        if(d.presenterMode === 'ALIVE_LIST') {
+            if(listEl.classList.contains('hidden')) {
+                listEl.classList.remove('hidden', 'anim-list-exit');
+                listEl.classList.add('anim-text-enter');
+                socket.emit('request_presenter_data');
+            }
+        } else {
+            if(!listEl.classList.contains('hidden') && !listEl.classList.contains('anim-list-exit')) {
+                listEl.classList.add('anim-list-exit');
+                setTimeout(() => { listEl.classList.add('hidden'); listEl.classList.remove('anim-list-exit'); }, 400);
+            }
+        }
+    });
+
+    socket.on('presenter_sync_full', (data) => {
+        document.getElementById('stat-alive').innerText = Object.values(data.gameState.aliveCount || 0);
+        if (data.gameState.phase === 'QUESTION' || data.gameState.phase === 'REVIEW') {
+            if(data.currentQuestion) {
+                renderQuestion(data.currentQuestion.index, data.currentQuestion.text, data.currentQuestion.options);
+                if(data.correctIndex !== undefined) showCorrectAnswer(data.correctIndex, data.stats || []);
+            }
+            document.getElementById('view-waiting').classList.add('hidden');
+            document.getElementById('view-game').classList.remove('hidden');
+        } else {
+            document.getElementById('view-waiting').classList.remove('hidden');
+            document.getElementById('view-game').classList.add('hidden');
+        }
+    });
+
+    socket.on('presenter_data', (data) => {
+        const g = document.getElementById('list-grid');
+        const total = data.alivePlayers.length;
+        document.getElementById('list-total').innerText = total;
+        g.innerHTML = '';
+        const isSmallGroup = total < 10;
+        if (isSmallGroup) { g.classList.remove('flex-row', 'flex-wrap'); g.classList.add('flex-col', 'items-center'); }
+        else { g.classList.remove('flex-col', 'items-center'); g.classList.add('flex-row', 'flex-wrap'); }
+
+        data.alivePlayers.forEach((p, i) => {
+            const div = document.createElement('div');
+            if (isSmallGroup) div.className = "survivor-card-modern w-full max-w-2xl py-6 px-10 rounded-2xl text-4xl font-bold text-white text-center tracking-wider animate-enter shadow-[0_0_20px_rgba(16,185,129,0.2)]";
+            else div.className = "survivor-card-modern py-4 px-8 rounded-xl text-xl font-bold text-white min-w-[200px] text-center";
+            div.style.animation = `textFadeIn 0.4s ease-out forwards ${i * 0.05}s`;
+            div.style.opacity = '0';
+            div.innerText = p.name;
+            g.appendChild(div);
+        });
+    });
+
+    socket.on('new_question', (d) => {
+        const gameContainer = document.getElementById('game-container');
+        const gameView = document.getElementById('view-game');
+        if (!gameView.classList.contains('hidden')) {
+            gameContainer.classList.add('anim-slide-out');
+            setTimeout(() => {
+                renderQuestion(d.index, d.text, d.options);
+                gameContainer.classList.remove('anim-slide-out');
+                gameContainer.classList.add('anim-slide-in');
+                gameContainer.style.display = 'none'; gameContainer.offsetHeight; gameContainer.style.display = 'block';
+            }, 500);
+        } else {
+            document.getElementById('view-waiting').classList.add('hidden');
+            gameView.classList.remove('hidden');
+            renderQuestion(d.index, d.text, d.options);
+        }
+    });
+
+    function renderQuestion(index, text, options) {
+        document.getElementById('q-num').innerText = index + 1;
+        document.getElementById('q-text').innerText = text;
+        const c = document.getElementById('q-opts');
+        c.innerHTML = '';
+        options.forEach((o, i) => {
+            c.innerHTML += `
+                    <div id="opt-${i}" class="glass-panel p-6 rounded-2xl flex items-center transition-all duration-500 relative overflow-hidden group border-r-0 border-l-4 border-white/10 hover:border-blue-400">
+                        <div class="progress-bg bg-transparent" id="prog-${i}"></div>
+                        <span class="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mr-6 font-digital text-3xl font-bold text-blue-200 shrink-0 shadow-inner z-10">${i+1}</span>
+                        <span style="margin-right: 20px;" class="text-white font-bold z-10 text-2xl">${o}</span>
+                    </div>`;
+        });
+    }
+
+    socket.on('reveal_answer', (d) => showCorrectAnswer(d.correctIndex, d.stats));
+
+    function showCorrectAnswer(index, stats = []) {
+        const total = stats.reduce((a,b) => a+b, 0);
+        for(let i=0; i<4; i++) {
+            const el = document.getElementById(`opt-${i}`);
+            if(!el) continue;
+            const count = stats[i] || 0;
+            const pct = total > 0 ? (count / total * 100) : 0;
+            const progBar = document.getElementById(`prog-${i}`);
+            progBar.style.width = pct + '%';
+            if (i === index) {
+                el.className = "glass-panel p-6 rounded-2xl flex items-center transition-all duration-300 relative overflow-hidden correct-answer-glow bg-emerald-900/30";
+                el.querySelector('span').className = "w-16 h-16 rounded-full bg-emerald-500 text-white flex items-center justify-center mr-6 font-digital text-3xl font-bold shrink-0 shadow-[0_0_15px_#10b981] z-10";
+                progBar.style.backgroundColor = "rgba(16, 185, 129, 0.4)";
+            } else {
+                progBar.style.backgroundColor = "rgba(239, 68, 68, 0.4)";
+            }
+        }
+    }
+</script>
+</body>
+</html>
