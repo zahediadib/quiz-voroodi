@@ -44,7 +44,6 @@
     <div class="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center mb-6 animate-pulse text-5xl text-indigo-600"><i class="fa-solid fa-hourglass-half"></i></div>
     <h2 class="text-2xl font-bold mb-2 text-gray-800">سلام <span id="p-name-display" class="text-indigo-600"></span></h2>
     <p class="text-gray-500 mb-12">منتظر سوال بعدی باشید...</p>
-    <button onclick="logout()" class="text-gray-400 text-sm">خروج</button>
 </div>
 
 <div id="screen-game" class="hidden h-full flex flex-col p-4 max-w-lg mx-auto w-full">
@@ -140,10 +139,10 @@
                 deathTimer = setTimeout(() => showScreen('dead'), 2500);
             } else {
                 // UPDATED MESSAGE HERE
-                fb.innerText = "به بازی برگردانده شدید ❤️"; fb.classList.remove('hidden'); fb.className = "mt-2 p-4 text-center font-bold rounded-2xl text-lg shadow-lg shrink-0 safe-area bg-pink-500 text-white fade-in";
+                fb.innerText = "به بازی برگردانده شدید! موفق باشید ...️ "; fb.classList.remove('hidden'); fb.className = "mt-2 p-4 text-center font-bold rounded-2xl text-lg shadow-lg shrink-0 safe-area bg-pink-500 text-white fade-in";
             }
         } else {
-            fb.innerText = "صحیح! 👏"; fb.classList.remove('hidden'); fb.className = "mt-2 p-4 text-center font-bold rounded-2xl text-lg shadow-lg shrink-0 safe-area bg-green-500 text-white fade-in";
+            fb.innerText = "صحیح! منتظر سوال بعدی بمانید ...👏"; fb.classList.remove('hidden'); fb.className = "mt-2 p-4 text-center font-bold rounded-2xl text-lg shadow-lg shrink-0 safe-area bg-green-500 text-white fade-in";
         }
     }
     socket.on('sync_pulse', (data) => { if(myStudentId && isAlive) document.getElementById('p-timer').innerText = data.time; });

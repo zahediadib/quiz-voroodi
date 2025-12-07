@@ -1,0 +1,8 @@
+# Dependencies
+node_modules/
+
+# IDE Settings
+.idea/
+
+# Custom Data
+game-state.json

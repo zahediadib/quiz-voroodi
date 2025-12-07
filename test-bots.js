@@ -1,6 +1,6 @@
 const io = require('socket.io-client');
 
-const URL = 'http://localhost:3000';
+const URL = 'http://localhost';
 const CLIENT_COUNT = 200;
 
 // لیست اسامی فارسی رندوم
