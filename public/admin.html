@@ -12,7 +12,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700;900&display=swap');
         body { font-family: 'Sahel', sans-serif; }
         .stat-bar { transition: width 0.5s ease; }
-        /* Add fixed width for timer to prevent jitter */
+        /* Fixed width prevents jitter when numbers change */
         #adm-timer { font-variant-numeric: tabular-nums; min-width: 60px; display: inline-block; text-align: left; }
     </style>
 </head>
@@ -94,8 +94,8 @@
             </div>
             <div class="overflow-y-auto flex-grow p-2">
                 <table class="w-full text-sm">
-                    <thead class="sticky top-0 bg-white shadow-sm">
-                    <tr class="text-right border-b text-gray-500"><th class="pb-2">نام</th><th>ID</th><th>پاسخ</th><th>وضعیت</th><th>عملیات</th></tr>
+                    <thead class="sticky top-0 bg-white shadow-sm z-10">
+                    <tr class="text-right border-b text-gray-500 bg-gray-50"><th class="pb-2">نام</th><th>ID</th><th>پاسخ</th><th>وضعیت</th><th>عملیات</th></tr>
                     </thead>
                     <tbody id="adm-player-list"></tbody>
                 </table>
@@ -105,12 +105,11 @@
 </div>
 
 <script>
-    // Force WebSocket transport for better performance
     const socket = io({transports: ['websocket']});
     let allQuestions = [];
     let currentPresenterMode = 'GAME';
     let savedQuestionStats = {};
-    let timerFrame = null; // Variable to hold the smooth timer animation
+    let timerFrame = null;
 
     socket.on('connect', () => {
         document.getElementById('connection-status').innerText = 'Connected';
@@ -147,38 +146,29 @@
         socket.emit('request_admin_data');
     }
 
-    // --- SMOOTH TIMER LOGIC ---
+    // --- SMOOTH TIMER ---
     function runSmoothTimer(seconds) {
         if(timerFrame) cancelAnimationFrame(timerFrame);
-
         const endTime = Date.now() + (seconds * 1000);
-
         function step() {
             const now = Date.now();
             const remain = Math.max(0, (endTime - now) / 1000);
-
             document.getElementById('adm-timer').innerText = remain.toFixed(1);
-
             if (remain > 0) {
                 timerFrame = requestAnimationFrame(step);
             } else {
-                // Ensure it shows exactly 0.0 at the end
                 document.getElementById('adm-timer').innerText = "0.0";
             }
         }
         step();
     }
 
-    // --- REALTIME PULSE (1Hz) ---
+    // --- PULSE (Fast updates) ---
     socket.on('sync_pulse', (data) => {
         document.getElementById('adm-alive-count').innerText = data.aliveCount;
 
-        // Only if phase is QUESTION, we manage the timer
         if (data.phase === 'QUESTION') {
             const serverTime = parseFloat(data.time);
-
-            // If timer isn't running, OR if desync is large (> 0.5s), resync
-            // This prevents "jumping" if the difference is small
             const currentDisplay = parseFloat(document.getElementById('adm-timer').innerText);
             const drift = Math.abs(currentDisplay - serverTime);
 
@@ -186,25 +176,22 @@
                 runSmoothTimer(serverTime);
             }
         } else {
-            // If not in question mode, stop timer and show 0
             if(timerFrame) cancelAnimationFrame(timerFrame);
             timerFrame = null;
-            document.getElementById('adm-timer').innerText = data.time; // Should be 0.0
+            document.getElementById('adm-timer').innerText = data.time;
         }
-
         document.getElementById('adm-phase-badge').innerText = data.phase;
     });
 
-    // --- HEAVY DATA UPDATE ---
+    // --- HEAVY DATA UPDATE (OPTIMIZED) ---
+    // Instead of rebuilding the table (innerHTML=''), we update existing rows.
     socket.on('admin_data', (data) => {
-        document.getElementById('adm-phase-badge').innerText = data.gameState.phase;
         currentPresenterMode = data.gameState.presenterMode;
         savedQuestionStats = data.gameState.questionStats || {};
 
-        // Update Total Count
         document.getElementById('adm-total-count').innerText = Object.keys(data.players).length;
 
-        // Update Presenter Button State
+        // Button State
         const pBtn = document.getElementById('btn-toggle-presenter');
         if (currentPresenterMode === 'GAME') {
             pBtn.innerHTML = '<i class="fa-solid fa-gamepad mr-1"></i> نمایش: بازی';
@@ -214,42 +201,84 @@
             pBtn.className = "bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 w-40";
         }
 
-        // --- Render Player List ---
+        // --- OPTIMIZED TABLE RENDER ---
         const list = document.getElementById('adm-player-list');
-        list.innerHTML = '';
-
         const stats = [0,0,0,0];
         let totalAnswers = 0;
+        const currentQIdx = data.gameState.currentQuestionIndex;
+
         const playersArr = Object.values(data.players);
-        // Sort: Alive first, then Alphabetical
+        // Sort: Alive first
         playersArr.sort((a, b) => {
             if (a.isAlive === b.isAlive) return a.name.localeCompare(b.name);
             return b.isAlive ? 1 : -1;
         });
 
-        const currentQIdx = data.gameState.currentQuestionIndex;
+        // 1. Mark all current rows as "unseen"
+        const existingRows = new Set();
+        list.querySelectorAll('tr').forEach(tr => existingRows.add(tr.id));
 
         playersArr.forEach(p => {
+            const rowId = `row-${p.studentId}`;
+            existingRows.delete(rowId); // We saw this player
+
             const showAnswer = (p.isAlive || p.deathRound === currentQIdx) && p.currentAnswer !== null;
+            if(showAnswer) { stats[p.currentAnswer]++; totalAnswers++; }
 
-            if(showAnswer) {
-                stats[p.currentAnswer]++;
-                totalAnswers++;
-            }
-
-            const tr = document.createElement('tr');
-            tr.className = p.isAlive ? 'bg-green-50' : 'bg-red-50 text-gray-400';
-
-            let actions = `<button onclick="kick('${p.studentId}')" class="text-red-500 mx-1" title="حذف"><i class="fa-solid fa-trash-can"></i></button>`;
-            if (!p.isAlive) actions += `<button onclick="reviveOne('${p.studentId}')" class="text-pink-500 mx-1" title="احیا"><i class="fa-solid fa-heart-pulse"></i></button>`;
+            const statusClass = p.isAlive ? 'text-green-700' : 'text-red-700';
+            const bgClass = p.isAlive ? 'bg-green-50' : 'bg-red-50 text-gray-400';
+            const statusText = p.isAlive ? 'زنده' : 'حذف';
 
             let ansDisplay = '-';
-            if(showAnswer) {
-                ansDisplay = `<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold">${parseInt(p.currentAnswer)+1}</span>`;
+            if(showAnswer) ansDisplay = `<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold">${parseInt(p.currentAnswer)+1}</span>`;
+
+            let row = document.getElementById(rowId);
+
+            if (!row) {
+                // CREATE NEW ROW
+                row = document.createElement('tr');
+                row.id = rowId;
+                // Actions (static)
+                let actions = `<button onclick="kick('${p.studentId}')" class="text-red-500 mx-1" title="حذف"><i class="fa-solid fa-trash-can"></i></button>`;
+                actions += `<button onclick="reviveOne('${p.studentId}')" class="text-pink-500 mx-1" title="احیا"><i class="fa-solid fa-heart-pulse"></i></button>`;
+
+                row.innerHTML = `
+                    <td class="p-2 border-b name-cell"></td>
+                    <td class="p-2 border-b font-mono text-xs id-cell"></td>
+                    <td class="p-2 border-b ans-cell"></td>
+                    <td class="p-2 border-b font-bold status-cell"></td>
+                    <td class="p-2 border-b">${actions}</td>`;
+
+                list.appendChild(row); // Append new row
+            } else {
+                // Move existing row to bottom (to match sorted order)
+                // This is cheap in DOM
+                list.appendChild(row);
             }
 
-            tr.innerHTML = `<td class="p-2 border-b">${p.name}</td><td class="p-2 border-b font-mono text-xs">${p.studentId}</td><td class="p-2 border-b">${ansDisplay}</td><td class="p-2 border-b font-bold ${p.isAlive?'text-green-700':'text-red-700'}">${p.isAlive?'زنده':'حذف'}</td><td class="p-2 border-b">${actions}</td>`;
-            list.appendChild(tr);
+            // UPDATE CONTENT (Only if changed to minimize painting)
+            if(row.className !== bgClass) row.className = bgClass;
+
+            const nameCell = row.querySelector('.name-cell');
+            if(nameCell.innerText !== p.name) nameCell.innerText = p.name;
+
+            const idCell = row.querySelector('.id-cell');
+            if(idCell.innerText !== p.studentId) idCell.innerText = p.studentId;
+
+            const ansCell = row.querySelector('.ans-cell');
+            if(ansCell.innerHTML !== ansDisplay) ansCell.innerHTML = ansDisplay;
+
+            const statCell = row.querySelector('.status-cell');
+            if(statCell.innerText !== statusText) {
+                statCell.innerText = statusText;
+                statCell.className = `p-2 border-b font-bold ${statusClass}`;
+            }
+        });
+
+        // Remove rows that are no longer in data (Kicked players)
+        existingRows.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.remove();
         });
 
         // --- Stats Bar ---
@@ -259,14 +288,17 @@
             return `<div class="bg-gray-200 rounded p-1"><span class="font-bold block">گزینه ${i+1}</span><span class="text-blue-600">${count} (${pct}%)</span></div>`;
         }).join('');
         statsHtml += `<div class="col-span-4 mt-1 bg-blue-50 border border-blue-200 rounded p-1 text-center"><span class="font-bold text-blue-800">مجموع آرا: ${totalAnswers}</span></div>`;
-        statsBar.innerHTML = statsHtml;
 
-        // --- Button State ---
-        if(data.gameState.phase === 'QUESTION') document.getElementById('btn-end-q').classList.remove('hidden');
-        else document.getElementById('btn-end-q').classList.add('hidden');
+        // Simple innerHTML replace for stats bar is fine, it's small
+        if(statsBar.innerHTML !== statsHtml) statsBar.innerHTML = statsHtml;
 
-        // --- Question Dropdown Population ---
-        if(allQuestions.length === 0) {
+        // Button Visibility
+        const endBtn = document.getElementById('btn-end-q');
+        if(data.gameState.phase === 'QUESTION') endBtn.classList.remove('hidden');
+        else endBtn.classList.add('hidden');
+
+        // Questions Dropdown (Run once)
+        if(allQuestions.length === 0 && data.allQuestions) {
             allQuestions = data.allQuestions;
             const sel = document.getElementById('adm-q-select');
             allQuestions.forEach((q, i) => {
@@ -275,12 +307,11 @@
             });
             sel.onchange = updatePreview;
             updatePreview();
-        } else {
+        } else if (allQuestions.length > 0) {
             updatePreview();
         }
     });
 
-    // --- Updates the "Total Players" count instantly when they register ---
     socket.on('stats_update', (data) => {
         if(data.totalPlayers) document.getElementById('adm-total-count').innerText = data.totalPlayers;
     });
@@ -289,7 +320,10 @@
         const idx = document.getElementById('adm-q-select').value;
         if (idx === "") return;
         const q = allQuestions[idx];
-        document.getElementById('adm-prev-text').innerText = q.text;
+
+        // Check if update is needed to avoid text flickering
+        const currentText = document.getElementById('adm-prev-text').innerText;
+        if(currentText !== q.text) document.getElementById('adm-prev-text').innerText = q.text;
 
         const stats = savedQuestionStats[idx];
         let total = 0;
@@ -315,7 +349,9 @@
         if (stats) {
             optsHtml += `<div class="mt-2 text-center text-xs font-bold text-gray-500 border-t pt-2">مجموع کل آرا ثبت شده برای این سوال: ${total}</div>`;
         }
-        document.getElementById('adm-prev-opts').innerHTML = optsHtml;
+
+        const prevOpts = document.getElementById('adm-prev-opts');
+        if(prevOpts.innerHTML !== optsHtml) prevOpts.innerHTML = optsHtml;
     }
 
     function toggleReviveMenu(e) { e.stopPropagation(); document.getElementById('revive-dropdown').classList.toggle('hidden'); }
@@ -323,9 +359,7 @@
 
     function adminStartSelected() {
         const duration = document.getElementById('adm-time-select').value;
-        // Start the timer visually immediately for the admin (it will sync with server pulse in <1s)
         runSmoothTimer(parseInt(duration));
-
         socket.emit('admin_command', {
             action: 'START_SPECIFIC',
             index: parseInt(document.getElementById('adm-q-select').value),
