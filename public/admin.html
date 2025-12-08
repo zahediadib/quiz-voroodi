@@ -11,9 +11,14 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700;900&display=swap');
         body { font-family: 'Sahel', sans-serif; }
-        .stat-bar { transition: width 0.5s ease; }
-        /* Fixed width prevents jitter when numbers change */
-        #adm-timer { font-variant-numeric: tabular-nums; min-width: 60px; display: inline-block; text-align: left; }
+
+        /* Smooth Transitions for Casino Feel */
+        .smooth-width { transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .smooth-color { transition: background-color 0.3s ease, color 0.3s ease; }
+        .smooth-fade { transition: opacity 0.3s ease; }
+
+        /* Stable Timer Number */
+        #adm-timer { font-variant-numeric: tabular-nums; min-width: 80px; display: inline-block; text-align: left; }
     </style>
 </head>
 <body class="bg-gray-100 h-screen flex flex-col p-4" onclick="closeDropdowns(event)">
@@ -30,7 +35,7 @@
     <div class="bg-white p-3 rounded shadow mb-2 flex justify-between items-center shrink-0">
         <div class="flex items-center gap-4">
             <h1 class="text-lg font-bold">پنل مدیریت</h1>
-            <span id="adm-phase-badge" class="px-2 py-1 bg-gray-200 rounded text-xs font-mono">PHASE</span>
+            <span id="adm-phase-badge" class="px-2 py-1 bg-gray-200 rounded text-xs font-mono smooth-color">PHASE</span>
             <span class="text-xs text-gray-400 font-mono" id="connection-status">Online</span>
         </div>
         <div class="flex gap-2">
@@ -71,7 +76,7 @@
                         <i class="fa-solid fa-play"></i>
                     </button>
                 </div>
-                <button id="btn-end-q" onclick="socket.emit('admin_command', {action:'END_QUESTION_NOW'})" class="hidden w-full bg-orange-500 text-white py-2 rounded font-bold mt-2 hover:bg-orange-600">
+                <button id="btn-end-q" onclick="socket.emit('admin_command', {action:'END_QUESTION_NOW'})" class="hidden w-full bg-orange-500 text-white py-2 rounded font-bold mt-2 hover:bg-orange-600 smooth-fade">
                     <i class="fa-solid fa-stop mr-1"></i> پایان سوال (Force Stop)
                 </button>
             </div>
@@ -133,18 +138,11 @@
         document.getElementById('auth-modal').classList.add('hidden');
         document.getElementById('admin-interface').classList.remove('hidden');
         document.getElementById('admin-interface').classList.add('flex');
-        startPolling();
+        // Initial Fetch Only
+        socket.emit('request_admin_data');
     });
 
     socket.on('admin_auth_fail', () => { document.getElementById('auth-modal').classList.remove('hidden'); alert('رمز اشتباه است'); });
-
-    // Poll for heavy data (player list) every 2 seconds
-    let pollInterval;
-    function startPolling() {
-        if(pollInterval) clearInterval(pollInterval);
-        pollInterval = setInterval(() => socket.emit('request_admin_data'), 2000);
-        socket.emit('request_admin_data');
-    }
 
     // --- SMOOTH TIMER ---
     function runSmoothTimer(seconds) {
@@ -163,16 +161,15 @@
         step();
     }
 
-    // --- PULSE (Fast updates) ---
+    // --- PULSE (Check Timer Drift) ---
     socket.on('sync_pulse', (data) => {
-        document.getElementById('adm-alive-count').innerText = data.aliveCount;
-
+        // We do NOT wait for pulse to update stats anymore, data is pushed.
+        // We only check timer drift here.
         if (data.phase === 'QUESTION') {
             const serverTime = parseFloat(data.time);
             const currentDisplay = parseFloat(document.getElementById('adm-timer').innerText);
-            const drift = Math.abs(currentDisplay - serverTime);
-
-            if (!timerFrame || drift > 1.0) {
+            // Only correct if drift is significant (> 1s) to avoid jumping
+            if (!timerFrame || Math.abs(currentDisplay - serverTime) > 1.0) {
                 runSmoothTimer(serverTime);
             }
         } else {
@@ -183,22 +180,22 @@
         document.getElementById('adm-phase-badge').innerText = data.phase;
     });
 
-    // --- HEAVY DATA UPDATE (OPTIMIZED) ---
-    // Instead of rebuilding the table (innerHTML=''), we update existing rows.
+    // --- REALTIME DATA PUSH ---
     socket.on('admin_data', (data) => {
         currentPresenterMode = data.gameState.presenterMode;
         savedQuestionStats = data.gameState.questionStats || {};
 
         document.getElementById('adm-total-count').innerText = Object.keys(data.players).length;
+        document.getElementById('adm-alive-count').innerText = data.gameState.aliveCount;
 
         // Button State
         const pBtn = document.getElementById('btn-toggle-presenter');
         if (currentPresenterMode === 'GAME') {
             pBtn.innerHTML = '<i class="fa-solid fa-gamepad mr-1"></i> نمایش: بازی';
-            pBtn.className = "bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700 w-40";
+            pBtn.className = "bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700 w-40 smooth-color";
         } else {
             pBtn.innerHTML = '<i class="fa-solid fa-list-ol mr-1"></i> نمایش: لیست';
-            pBtn.className = "bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 w-40";
+            pBtn.className = "bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 w-40 smooth-color";
         }
 
         // --- OPTIMIZED TABLE RENDER ---
@@ -208,20 +205,17 @@
         const currentQIdx = data.gameState.currentQuestionIndex;
 
         const playersArr = Object.values(data.players);
-        // Sort: Alive first
         playersArr.sort((a, b) => {
             if (a.isAlive === b.isAlive) return a.name.localeCompare(b.name);
             return b.isAlive ? 1 : -1;
         });
 
-        // 1. Mark all current rows as "unseen"
-        const existingRows = new Set();
-        list.querySelectorAll('tr').forEach(tr => existingRows.add(tr.id));
+        const existingRows = new Map();
+        list.querySelectorAll('tr').forEach(tr => existingRows.set(tr.id, tr));
+        const newRowsFragment = document.createDocumentFragment();
 
         playersArr.forEach(p => {
             const rowId = `row-${p.studentId}`;
-            existingRows.delete(rowId); // We saw this player
-
             const showAnswer = (p.isAlive || p.deathRound === currentQIdx) && p.currentAnswer !== null;
             if(showAnswer) { stats[p.currentAnswer]++; totalAnswers++; }
 
@@ -232,31 +226,27 @@
             let ansDisplay = '-';
             if(showAnswer) ansDisplay = `<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold">${parseInt(p.currentAnswer)+1}</span>`;
 
-            let row = document.getElementById(rowId);
+            let row = existingRows.get(rowId);
 
             if (!row) {
-                // CREATE NEW ROW
                 row = document.createElement('tr');
                 row.id = rowId;
-                // Actions (static)
-                let actions = `<button onclick="kick('${p.studentId}')" class="text-red-500 mx-1" title="حذف"><i class="fa-solid fa-trash-can"></i></button>`;
-                actions += `<button onclick="reviveOne('${p.studentId}')" class="text-pink-500 mx-1" title="احیا"><i class="fa-solid fa-heart-pulse"></i></button>`;
-
                 row.innerHTML = `
                     <td class="p-2 border-b name-cell"></td>
                     <td class="p-2 border-b font-mono text-xs id-cell"></td>
                     <td class="p-2 border-b ans-cell"></td>
                     <td class="p-2 border-b font-bold status-cell"></td>
-                    <td class="p-2 border-b">${actions}</td>`;
-
-                list.appendChild(row); // Append new row
-            } else {
-                // Move existing row to bottom (to match sorted order)
-                // This is cheap in DOM
-                list.appendChild(row);
+                    <td class="p-2 border-b">
+                        <button onclick="kick('${p.studentId}')" class="text-red-500 mx-1"><i class="fa-solid fa-trash-can"></i></button>
+                        <button onclick="reviveOne('${p.studentId}')" class="text-pink-500 mx-1"><i class="fa-solid fa-heart-pulse"></i></button>
+                    </td>`;
             }
 
-            // UPDATE CONTENT (Only if changed to minimize painting)
+            // Mark as processed so we don't delete it
+            existingRows.delete(rowId);
+            newRowsFragment.appendChild(row);
+
+            // DOM Updates (only if changed)
             if(row.className !== bgClass) row.className = bgClass;
 
             const nameCell = row.querySelector('.name-cell');
@@ -271,25 +261,31 @@
             const statCell = row.querySelector('.status-cell');
             if(statCell.innerText !== statusText) {
                 statCell.innerText = statusText;
-                statCell.className = `p-2 border-b font-bold ${statusClass}`;
+                statCell.className = `p-2 border-b font-bold status-cell ${statusClass}`;
             }
         });
 
-        // Remove rows that are no longer in data (Kicked players)
-        existingRows.forEach(id => {
-            const el = document.getElementById(id);
-            if(el) el.remove();
-        });
+        // Cleanup kicked players
+        existingRows.forEach(row => row.remove());
+        // Batch Append (Browser handles moves efficiently)
+        list.appendChild(newRowsFragment);
 
-        // --- Stats Bar ---
+        // --- STATS BAR ANIMATION ---
         const statsBar = document.getElementById('adm-stats-bar');
+        // We rebuild HTML but use CSS for smooth transitions if structure is same
         let statsHtml = stats.map((count, i) => {
             const pct = totalAnswers > 0 ? Math.round((count/totalAnswers)*100) : 0;
-            return `<div class="bg-gray-200 rounded p-1"><span class="font-bold block">گزینه ${i+1}</span><span class="text-blue-600">${count} (${pct}%)</span></div>`;
+            return `
+                <div class="bg-gray-200 rounded p-1 relative overflow-hidden">
+                    <div class="absolute inset-0 bg-blue-100 smooth-width" style="width: ${pct}%; z-index:0;"></div>
+                    <div class="relative z-10">
+                        <span class="font-bold block text-xs">گزینه ${i+1}</span>
+                        <span class="text-blue-800 font-bold">${count}</span>
+                    </div>
+                </div>`;
         }).join('');
         statsHtml += `<div class="col-span-4 mt-1 bg-blue-50 border border-blue-200 rounded p-1 text-center"><span class="font-bold text-blue-800">مجموع آرا: ${totalAnswers}</span></div>`;
 
-        // Simple innerHTML replace for stats bar is fine, it's small
         if(statsBar.innerHTML !== statsHtml) statsBar.innerHTML = statsHtml;
 
         // Button Visibility
@@ -297,7 +293,7 @@
         if(data.gameState.phase === 'QUESTION') endBtn.classList.remove('hidden');
         else endBtn.classList.add('hidden');
 
-        // Questions Dropdown (Run once)
+        // Questions Data
         if(allQuestions.length === 0 && data.allQuestions) {
             allQuestions = data.allQuestions;
             const sel = document.getElementById('adm-q-select');
@@ -321,9 +317,8 @@
         if (idx === "") return;
         const q = allQuestions[idx];
 
-        // Check if update is needed to avoid text flickering
-        const currentText = document.getElementById('adm-prev-text').innerText;
-        if(currentText !== q.text) document.getElementById('adm-prev-text').innerText = q.text;
+        const prevText = document.getElementById('adm-prev-text');
+        if(prevText.innerText !== q.text) prevText.innerText = q.text;
 
         const stats = savedQuestionStats[idx];
         let total = 0;
