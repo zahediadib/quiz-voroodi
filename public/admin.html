@@ -12,11 +12,12 @@
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700;900&display=swap');
         body { font-family: 'Sahel', sans-serif; }
         .stat-bar { transition: width 0.5s ease; }
+        /* Add fixed width for timer to prevent jitter */
+        #adm-timer { font-variant-numeric: tabular-nums; min-width: 60px; display: inline-block; text-align: left; }
     </style>
 </head>
 <body class="bg-gray-100 h-screen flex flex-col p-4" onclick="closeDropdowns(event)">
 
-<!-- Auth -->
 <div id="auth-modal" class="fixed inset-0 bg-gray-900 bg-opacity-90 flex items-center justify-center z-50">
     <div class="bg-white p-6 rounded shadow-lg text-center">
         <h2 class="text-xl font-bold mb-4">رمز عبور ادمین</h2>
@@ -25,12 +26,12 @@
     </div>
 </div>
 
-<!-- Interface -->
 <div id="admin-interface" class="hidden flex-col h-full">
     <div class="bg-white p-3 rounded shadow mb-2 flex justify-between items-center shrink-0">
         <div class="flex items-center gap-4">
             <h1 class="text-lg font-bold">پنل مدیریت</h1>
             <span id="adm-phase-badge" class="px-2 py-1 bg-gray-200 rounded text-xs font-mono">PHASE</span>
+            <span class="text-xs text-gray-400 font-mono" id="connection-status">Online</span>
         </div>
         <div class="flex gap-2">
             <div class="relative">
@@ -52,12 +53,11 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-12 gap-4 flex-grow overflow-hidden">
-        <!-- Left: Controls -->
         <div class="md:col-span-5 flex flex-col gap-2 overflow-hidden h-full">
             <div class="bg-blue-50 p-4 rounded border shrink-0">
                 <div class="flex justify-between items-center mb-2">
                     <span class="font-bold"><i class="fa-regular fa-clock ml-1"></i>تایمر</span>
-                    <span class="text-2xl font-bold text-blue-600 font-mono" id="adm-timer">0.0</span>
+                    <span class="text-3xl font-bold text-blue-600 font-mono" id="adm-timer">0.0</span>
                 </div>
                 <div class="flex gap-2 items-center">
                     <select id="adm-q-select" class="flex-grow border rounded p-2 text-sm h-10"></select>
@@ -72,7 +72,7 @@
                     </button>
                 </div>
                 <button id="btn-end-q" onclick="socket.emit('admin_command', {action:'END_QUESTION_NOW'})" class="hidden w-full bg-orange-500 text-white py-2 rounded font-bold mt-2 hover:bg-orange-600">
-                    <i class="fa-solid fa-stop mr-1"></i> پایان سوال
+                    <i class="fa-solid fa-stop mr-1"></i> پایان سوال (Force Stop)
                 </button>
             </div>
 
@@ -83,12 +83,14 @@
             </div>
         </div>
 
-        <!-- Right: Players -->
         <div class="md:col-span-7 bg-white rounded border flex flex-col h-full overflow-hidden">
             <div class="p-2 border-b bg-gray-50 grid grid-cols-4 gap-2 text-center text-xs" id="adm-stats-bar"></div>
             <div class="p-3 border-b bg-gray-50 flex justify-between items-center shrink-0">
                 <h2 class="font-bold"><i class="fa-solid fa-users ml-1"></i>شرکت کنندگان</h2>
-                <span class="bg-blue-100 text-blue-800 px-2 rounded text-sm">زنده: <span id="adm-alive-count">0</span></span>
+                <div class="flex gap-2">
+                    <span class="bg-gray-200 text-gray-800 px-2 rounded text-sm" title="Total">کل: <span id="adm-total-count">0</span></span>
+                    <span class="bg-blue-100 text-blue-800 px-2 rounded text-sm" title="Alive">زنده: <span id="adm-alive-count">0</span></span>
+                </div>
             </div>
             <div class="overflow-y-auto flex-grow p-2">
                 <table class="w-full text-sm">
@@ -103,12 +105,27 @@
 </div>
 
 <script>
-    const socket = io();
+    // Force WebSocket transport for better performance
+    const socket = io({transports: ['websocket']});
     let allQuestions = [];
     let currentPresenterMode = 'GAME';
     let savedQuestionStats = {};
+    let timerFrame = null; // Variable to hold the smooth timer animation
 
-    socket.on('connect', () => { const savedPass = localStorage.getItem('admin_pass'); if(savedPass) { document.getElementById('admin-pass').value = savedPass; auth(); } });
+    socket.on('connect', () => {
+        document.getElementById('connection-status').innerText = 'Connected';
+        document.getElementById('connection-status').className = 'text-xs text-green-600 font-mono';
+        const savedPass = localStorage.getItem('admin_pass');
+        if(savedPass) {
+            document.getElementById('admin-pass').value = savedPass;
+            auth();
+        }
+    });
+
+    socket.on('disconnect', () => {
+        document.getElementById('connection-status').innerText = 'Disconnected';
+        document.getElementById('connection-status').className = 'text-xs text-red-600 font-mono';
+    });
 
     function auth() { const pass = document.getElementById('admin-pass').value; if(!pass) return; socket.emit('admin_auth', pass); }
 
@@ -122,16 +139,72 @@
 
     socket.on('admin_auth_fail', () => { document.getElementById('auth-modal').classList.remove('hidden'); alert('رمز اشتباه است'); });
 
+    // Poll for heavy data (player list) every 2 seconds
     let pollInterval;
-    function startPolling() { if(pollInterval) clearInterval(pollInterval); pollInterval = setInterval(() => socket.emit('request_admin_data'), 2000); socket.emit('request_admin_data'); }
+    function startPolling() {
+        if(pollInterval) clearInterval(pollInterval);
+        pollInterval = setInterval(() => socket.emit('request_admin_data'), 2000);
+        socket.emit('request_admin_data');
+    }
 
-    socket.on('sync_pulse', (data) => { document.getElementById('adm-timer').innerText = data.time; document.getElementById('adm-alive-count').innerText = data.aliveCount; });
+    // --- SMOOTH TIMER LOGIC ---
+    function runSmoothTimer(seconds) {
+        if(timerFrame) cancelAnimationFrame(timerFrame);
 
+        const endTime = Date.now() + (seconds * 1000);
+
+        function step() {
+            const now = Date.now();
+            const remain = Math.max(0, (endTime - now) / 1000);
+
+            document.getElementById('adm-timer').innerText = remain.toFixed(1);
+
+            if (remain > 0) {
+                timerFrame = requestAnimationFrame(step);
+            } else {
+                // Ensure it shows exactly 0.0 at the end
+                document.getElementById('adm-timer').innerText = "0.0";
+            }
+        }
+        step();
+    }
+
+    // --- REALTIME PULSE (1Hz) ---
+    socket.on('sync_pulse', (data) => {
+        document.getElementById('adm-alive-count').innerText = data.aliveCount;
+
+        // Only if phase is QUESTION, we manage the timer
+        if (data.phase === 'QUESTION') {
+            const serverTime = parseFloat(data.time);
+
+            // If timer isn't running, OR if desync is large (> 0.5s), resync
+            // This prevents "jumping" if the difference is small
+            const currentDisplay = parseFloat(document.getElementById('adm-timer').innerText);
+            const drift = Math.abs(currentDisplay - serverTime);
+
+            if (!timerFrame || drift > 1.0) {
+                runSmoothTimer(serverTime);
+            }
+        } else {
+            // If not in question mode, stop timer and show 0
+            if(timerFrame) cancelAnimationFrame(timerFrame);
+            timerFrame = null;
+            document.getElementById('adm-timer').innerText = data.time; // Should be 0.0
+        }
+
+        document.getElementById('adm-phase-badge').innerText = data.phase;
+    });
+
+    // --- HEAVY DATA UPDATE ---
     socket.on('admin_data', (data) => {
         document.getElementById('adm-phase-badge').innerText = data.gameState.phase;
         currentPresenterMode = data.gameState.presenterMode;
         savedQuestionStats = data.gameState.questionStats || {};
 
+        // Update Total Count
+        document.getElementById('adm-total-count').innerText = Object.keys(data.players).length;
+
+        // Update Presenter Button State
         const pBtn = document.getElementById('btn-toggle-presenter');
         if (currentPresenterMode === 'GAME') {
             pBtn.innerHTML = '<i class="fa-solid fa-gamepad mr-1"></i> نمایش: بازی';
@@ -141,19 +214,22 @@
             pBtn.className = "bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 w-40";
         }
 
-        const stats = [0,0,0,0];
-        let totalAnswers = 0;
-        const playersArr = Object.values(data.players);
-        playersArr.sort((a, b) => (b.isAlive === a.isAlive) ? 0 : b.isAlive ? 1 : -1);
-
+        // --- Render Player List ---
         const list = document.getElementById('adm-player-list');
         list.innerHTML = '';
 
-        // Current Question Index for Death Logic Check
+        const stats = [0,0,0,0];
+        let totalAnswers = 0;
+        const playersArr = Object.values(data.players);
+        // Sort: Alive first, then Alphabetical
+        playersArr.sort((a, b) => {
+            if (a.isAlive === b.isAlive) return a.name.localeCompare(b.name);
+            return b.isAlive ? 1 : -1;
+        });
+
         const currentQIdx = data.gameState.currentQuestionIndex;
 
         playersArr.forEach(p => {
-            // FIXED LOGIC: Count if alive OR if died in THIS round
             const showAnswer = (p.isAlive || p.deathRound === currentQIdx) && p.currentAnswer !== null;
 
             if(showAnswer) {
@@ -168,7 +244,6 @@
             if (!p.isAlive) actions += `<button onclick="reviveOne('${p.studentId}')" class="text-pink-500 mx-1" title="احیا"><i class="fa-solid fa-heart-pulse"></i></button>`;
 
             let ansDisplay = '-';
-            // Show answer if Alive OR just died this round
             if(showAnswer) {
                 ansDisplay = `<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold">${parseInt(p.currentAnswer)+1}</span>`;
             }
@@ -177,20 +252,20 @@
             list.appendChild(tr);
         });
 
-        // Stats Bar Calculation
+        // --- Stats Bar ---
         const statsBar = document.getElementById('adm-stats-bar');
         let statsHtml = stats.map((count, i) => {
             const pct = totalAnswers > 0 ? Math.round((count/totalAnswers)*100) : 0;
             return `<div class="bg-gray-200 rounded p-1"><span class="font-bold block">گزینه ${i+1}</span><span class="text-blue-600">${count} (${pct}%)</span></div>`;
         }).join('');
-
         statsHtml += `<div class="col-span-4 mt-1 bg-blue-50 border border-blue-200 rounded p-1 text-center"><span class="font-bold text-blue-800">مجموع آرا: ${totalAnswers}</span></div>`;
-
         statsBar.innerHTML = statsHtml;
 
+        // --- Button State ---
         if(data.gameState.phase === 'QUESTION') document.getElementById('btn-end-q').classList.remove('hidden');
         else document.getElementById('btn-end-q').classList.add('hidden');
 
+        // --- Question Dropdown Population ---
         if(allQuestions.length === 0) {
             allQuestions = data.allQuestions;
             const sel = document.getElementById('adm-q-select');
@@ -203,6 +278,11 @@
         } else {
             updatePreview();
         }
+    });
+
+    // --- Updates the "Total Players" count instantly when they register ---
+    socket.on('stats_update', (data) => {
+        if(data.totalPlayers) document.getElementById('adm-total-count').innerText = data.totalPlayers;
     });
 
     function updatePreview() {
@@ -218,7 +298,6 @@
         let optsHtml = q.options.map((o,i) => {
             let bgStyle = '';
             let statText = '';
-
             if (stats) {
                 const count = stats[i];
                 const pct = total > 0 ? Math.round((count/total)*100) : 0;
@@ -226,21 +305,16 @@
                 bgStyle = `background: linear-gradient(to left, ${color} ${pct}%, transparent ${pct}%);`;
                 statText = `<span class="float-left font-bold text-xs bg-gray-100 px-1 rounded ml-2">${count} رای (${pct}%)</span>`;
             }
-
             const borderClass = (i === q.correctIndex) ? 'border-green-500 bg-green-50' : 'border-gray-200';
-            const checkMark = (i === q.correctIndex) ? '<i class="fa-solid fa-check text-green-600"></i>' : '';
-
             return `
                 <div class="p-2 border rounded mb-1 relative overflow-hidden ${borderClass}" style="${bgStyle}">
                     <span class="font-bold">${i+1}.</span> ${o} ${statText}
-                    ${checkMark}
                 </div>`;
         }).join('');
 
         if (stats) {
             optsHtml += `<div class="mt-2 text-center text-xs font-bold text-gray-500 border-t pt-2">مجموع کل آرا ثبت شده برای این سوال: ${total}</div>`;
         }
-
         document.getElementById('adm-prev-opts').innerHTML = optsHtml;
     }
 
@@ -249,6 +323,9 @@
 
     function adminStartSelected() {
         const duration = document.getElementById('adm-time-select').value;
+        // Start the timer visually immediately for the admin (it will sync with server pulse in <1s)
+        runSmoothTimer(parseInt(duration));
+
         socket.emit('admin_command', {
             action: 'START_SPECIFIC',
             index: parseInt(document.getElementById('adm-q-select').value),

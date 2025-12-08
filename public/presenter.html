@@ -128,13 +128,33 @@
 </div>
 
 <script>
-    const socket = io();
+    const socket = io({transports: ['websocket']});
     socket.emit('presenter_join');
+
+    let timerFrame = null;
+
+    // Local Timer Logic
+    function runTimer(seconds) {
+        if(timerFrame) cancelAnimationFrame(timerFrame);
+        const end = Date.now() + (seconds * 1000);
+        function step() {
+            const r = Math.max(0, (end - Date.now())/1000);
+            document.getElementById('q-timer').innerText = r.toFixed(1);
+            if(r > 0) timerFrame = requestAnimationFrame(step);
+        }
+        step();
+    }
+
     socket.on('stats_update', (d) => document.getElementById('stat-players').innerText = d.totalPlayers);
 
+    // Only use sync_pulse for alive counts, NOT for timer animation
     socket.on('sync_pulse', (d) => {
-        document.getElementById('q-timer').innerText = d.time;
+        // Only force update timer if drift is huge (>2s) to prevent jitter
+        // document.getElementById('q-timer').innerText = d.time; // Removed
+
         document.getElementById('stat-alive').innerText = d.aliveCount;
+
+        // Handle view switching
         const listEl = document.getElementById('view-list');
         if(d.presenterMode === 'ALIVE_LIST') {
             if(listEl.classList.contains('hidden')) {
@@ -151,14 +171,15 @@
     });
 
     socket.on('presenter_sync_full', (data) => {
-        document.getElementById('stat-alive').innerText = Object.values(data.gameState.aliveCount || 0);
-
-        // FIX: Restore Total Players on Refresh
+        document.getElementById('stat-alive').innerText = data.gameState.aliveCount || 0;
         if(data.totalPlayers) document.getElementById('stat-players').innerText = data.totalPlayers;
 
         if (data.gameState.phase === 'QUESTION' || data.gameState.phase === 'REVIEW') {
             if(data.currentQuestion) {
                 renderQuestion(data.currentQuestion.index, data.currentQuestion.text, data.currentQuestion.options);
+                // Sync Timer on Refresh
+                if(data.serverTimeRemaining > 0) runTimer(data.serverTimeRemaining);
+
                 if(data.correctIndex !== undefined) showCorrectAnswer(data.correctIndex, data.stats || []);
             }
             document.getElementById('view-waiting').classList.add('hidden');
@@ -192,6 +213,10 @@
     socket.on('new_question', (d) => {
         const gameContainer = document.getElementById('game-container');
         const gameView = document.getElementById('view-game');
+
+        // Start Timer
+        runTimer(d.duration);
+
         if (!gameView.classList.contains('hidden')) {
             gameContainer.classList.add('anim-slide-out');
             setTimeout(() => {
@@ -204,6 +229,16 @@
             document.getElementById('view-waiting').classList.add('hidden');
             gameView.classList.remove('hidden');
             renderQuestion(d.index, d.text, d.options);
+        }
+    });
+
+    // ... rest of the render functions (renderQuestion, reveal_answer) remain the same ...
+    // Just ensure reveal_answer calls cancelAnimationFrame(timerFrame)
+    socket.on('reveal_answer', (d) => {
+        if(timerFrame) cancelAnimationFrame(timerFrame);
+        showCorrectAnswer(d.correctIndex, d.stats);
+        if(d.recentDeadNames && d.recentDeadNames.length > 0) {
+            spawnDeadNames(d.recentDeadNames);
         }
     });
 
