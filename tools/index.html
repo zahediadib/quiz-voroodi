@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ویرایشگر سوالات</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700&display=swap');
+        body { font-family: 'Vazirmatn', sans-serif; }
+        .active-q { border-right: 4px solid #4f46e5; background-color: #f3f4f6; }
+        /* استایل دکمه‌های جابجایی */
+        .move-btn { opacity: 0.3; transition: opacity 0.2s; }
+        .q-item:hover .move-btn { opacity: 1; }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen flex overflow-hidden">
+
+<div class="w-1/3 bg-white border-l border-gray-200 flex flex-col">
+    <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
+        <h2 class="font-bold text-lg">لیست سوالات (<span id="q-count">0</span>)</h2>
+        <button onclick="createNew()" class="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700 text-sm">
+            <i class="fa fa-plus ml-1"></i> جدید
+        </button>
+    </div>
+    <div id="q-list" class="flex-grow overflow-y-auto">
+    </div>
+    <div class="p-4 border-t bg-gray-50">
+        <button onclick="saveToDisk()" id="btn-save-disk" class="w-full bg-green-600 text-white py-3 rounded font-bold shadow hover:bg-green-700 transition">
+            <i class="fa fa-save ml-2"></i> ذخیره نهایی در فایل
+        </button>
+    </div>
+</div>
+
+<div class="w-2/3 p-8 overflow-y-auto relative">
+    <div id="editor-panel" class="max-w-2xl mx-auto bg-white p-6 rounded-2xl shadow-sm border hidden">
+        <div class="flex justify-between mb-6">
+            <span class="text-gray-400 text-sm font-mono">Index: <span id="ed-idx-display"></span></span>
+            <button onclick="deleteCurrent()" class="text-red-500 hover:text-red-700 text-sm font-bold">
+                <i class="fa fa-trash ml-1"></i> حذف این سوال
+            </button>
+        </div>
+
+        <div class="mb-6">
+            <label class="block text-gray-700 font-bold mb-2">متن سوال:</label>
+            <textarea id="ed-text" rows="3" class="w-full border p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="متن سوال را بنویسید..."></textarea>
+        </div>
+
+        <div class="space-y-3 mb-6">
+            <label class="block text-gray-700 font-bold mb-2">گزینه‌ها (گزینه صحیح را تیک بزنید):</label>
+
+            <div class="flex items-center gap-2">
+                <input type="radio" name="correct" value="0" class="w-5 h-5 text-indigo-600">
+                <input type="text" id="opt-0" class="flex-grow border p-2 rounded focus:border-indigo-500 outline-none" placeholder="گزینه ۱">
+            </div>
+            <div class="flex items-center gap-2">
+                <input type="radio" name="correct" value="1" class="w-5 h-5 text-indigo-600">
+                <input type="text" id="opt-1" class="flex-grow border p-2 rounded focus:border-indigo-500 outline-none" placeholder="گزینه ۲">
+            </div>
+            <div class="flex items-center gap-2">
+                <input type="radio" name="correct" value="2" class="w-5 h-5 text-indigo-600">
+                <input type="text" id="opt-2" class="flex-grow border p-2 rounded focus:border-indigo-500 outline-none" placeholder="گزینه ۳">
+            </div>
+            <div class="flex items-center gap-2">
+                <input type="radio" name="correct" value="3" class="w-5 h-5 text-indigo-600">
+                <input type="text" id="opt-3" class="flex-grow border p-2 rounded focus:border-indigo-500 outline-none" placeholder="گزینه ۴">
+            </div>
+        </div>
+
+        <button onclick="updateCurrent()" class="w-full bg-indigo-100 text-indigo-700 py-2 rounded-lg font-bold hover:bg-indigo-200 transition">
+            <i class="fa fa-check ml-1"></i> اعمال تغییرات (موقت)
+        </button>
+        <p class="text-xs text-gray-400 mt-2 text-center">برای ذخیره دائمی دکمه سبز سمت راست را بزنید.</p>
+    </div>
+
+    <div id="empty-state" class="flex h-full items-center justify-center text-gray-400 flex-col">
+        <i class="fa fa-pencil-alt text-6xl mb-4 opacity-20"></i>
+        <p>یک سوال را انتخاب کنید یا "جدید" را بزنید</p>
+    </div>
+</div>
+
+<script>
+    let questions = [];
+    let currentIndex = -1;
+
+    // Load Data
+    async function loadData() {
+        try {
+            const res = await fetch('/api/questions');
+            questions = await res.json();
+            renderList();
+        } catch(e) {
+            alert("خطا در بارگذاری سوالات. مطمئن شوید سرور editor.js در حال اجراست.");
+        }
+    }
+    loadData();
+
+    function renderList() {
+        const list = document.getElementById('q-list');
+        list.innerHTML = '';
+        document.getElementById('q-count').innerText = questions.length;
+
+        questions.forEach((q, idx) => {
+            const div = document.createElement('div');
+            div.className = `q-item p-3 border-b hover:bg-gray-50 cursor-pointer transition flex items-center gap-2 ${idx === currentIndex ? 'active-q' : ''}`;
+            div.onclick = () => selectQuestion(idx);
+
+            // Buttons for Order
+            const btnGroup = document.createElement('div');
+            btnGroup.className = 'flex flex-col gap-1';
+
+            // Up Button
+            const upBtn = document.createElement('button');
+            upBtn.innerHTML = '<i class="fa fa-chevron-up"></i>';
+            upBtn.className = `move-btn text-xs w-6 h-6 rounded bg-gray-200 hover:bg-blue-100 text-gray-600 hover:text-blue-600 ${idx === 0 ? 'invisible' : ''}`;
+            upBtn.onclick = (e) => { e.stopPropagation(); moveQuestion(idx, -1); };
+
+            // Down Button
+            const downBtn = document.createElement('button');
+            downBtn.innerHTML = '<i class="fa fa-chevron-down"></i>';
+            downBtn.className = `move-btn text-xs w-6 h-6 rounded bg-gray-200 hover:bg-blue-100 text-gray-600 hover:text-blue-600 ${idx === questions.length - 1 ? 'invisible' : ''}`;
+            downBtn.onclick = (e) => { e.stopPropagation(); moveQuestion(idx, 1); };
+
+            btnGroup.appendChild(upBtn);
+            btnGroup.appendChild(downBtn);
+
+            // Content
+            const content = document.createElement('div');
+            content.className = 'flex-grow min-w-0'; // min-w-0 for truncate to work
+            content.innerHTML = `
+                <div class="font-bold text-gray-800 truncate text-sm">${idx+1}. ${q.text}</div>
+                <div class="text-xs text-gray-500 mt-1 truncate">پاسخ: ${q.options[q.correctIndex]}</div>
+            `;
+
+            div.appendChild(btnGroup);
+            div.appendChild(content);
+            list.appendChild(div);
+        });
+    }
+
+    // --- NEW FUNCTION: Move Questions ---
+    function moveQuestion(index, direction) {
+        const targetIndex = index + direction;
+
+        // Safety checks
+        if (targetIndex < 0 || targetIndex >= questions.length) return;
+
+        // Swap in Array
+        const temp = questions[index];
+        questions[index] = questions[targetIndex];
+        questions[targetIndex] = temp;
+
+        // Follow the selection logic
+        // If we are moving the currently selected question, update currentIndex
+        if (currentIndex === index) {
+            currentIndex = targetIndex;
+        } else if (currentIndex === targetIndex) {
+            // If we swapped WITH the currently selected question, update it too
+            currentIndex = index;
+        }
+
+        renderList();
+    }
+
+    function selectQuestion(idx) {
+        currentIndex = idx;
+        const q = questions[idx];
+
+        document.getElementById('empty-state').classList.add('hidden');
+        document.getElementById('editor-panel').classList.remove('hidden');
+        renderList(); // update active class
+
+        document.getElementById('ed-idx-display').innerText = idx + 1;
+        document.getElementById('ed-text').value = q.text;
+
+        // Fill Options
+        [0,1,2,3].forEach(i => {
+            document.getElementById(`opt-${i}`).value = q.options[i];
+        });
+
+        // Set Radio
+        const radios = document.getElementsByName('correct');
+        radios.forEach(r => r.checked = false);
+        if(radios[q.correctIndex]) radios[q.correctIndex].checked = true;
+    }
+
+    function createNew() {
+        const newQ = {
+            id: Date.now(), // Generate Unique ID
+            text: "سوال جدید",
+            options: ["", "", "", ""],
+            correctIndex: 0
+        };
+        questions.push(newQ);
+        selectQuestion(questions.length - 1);
+
+        // Scroll to bottom
+        setTimeout(() => {
+            const list = document.getElementById('q-list');
+            list.scrollTop = list.scrollHeight;
+        }, 100);
+    }
+
+    function updateCurrent() {
+        if(currentIndex === -1) return;
+
+        const text = document.getElementById('ed-text').value;
+        const options = [0,1,2,3].map(i => document.getElementById(`opt-${i}`).value);
+
+        let correctIndex = 0;
+        document.getElementsByName('correct').forEach(r => {
+            if(r.checked) correctIndex = parseInt(r.value);
+        });
+
+        if(!text) {
+            alert('لطفا متن سوال را پر کنید.');
+            return;
+        }
+
+        questions[currentIndex].text = text;
+        questions[currentIndex].options = options;
+        questions[currentIndex].correctIndex = correctIndex;
+
+        renderList();
+
+        // Visual Feedback
+        const btn = document.querySelector('button[onclick="updateCurrent()"]');
+        const oldText = btn.innerHTML;
+        btn.innerHTML = "انجام شد!";
+        btn.classList.add("bg-green-100", "text-green-700");
+        setTimeout(() => {
+            btn.innerHTML = oldText;
+            btn.classList.remove("bg-green-100", "text-green-700");
+        }, 1000);
+    }
+
+    function deleteCurrent() {
+        if(confirm('آیا از حذف این سوال مطمئن هستید؟')) {
+            questions.splice(currentIndex, 1);
+            currentIndex = -1;
+            document.getElementById('editor-panel').classList.add('hidden');
+            document.getElementById('empty-state').classList.remove('hidden');
+            renderList();
+        }
+    }
+
+    async function saveToDisk() {
+        const btn = document.getElementById('btn-save-disk');
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin ml-2"></i> در حال ذخیره...';
+
+        try {
+            // Re-assign IDs based on new order (Optional, but keeps things clean)
+            questions.forEach((q, i) => q.id = i + 1);
+
+            const res = await fetch('/api/save', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(questions)
+            });
+            const data = await res.json();
+
+            if(data.success) {
+                alert('فایل با موفقیت ذخیره شد! سرور اصلی را ریستارت کنید.');
+            } else {
+                alert('خطا: ' + data.msg);
+            }
+        } catch(e) {
+            alert('خطا در ارتباط با سرور');
+        }
+        btn.innerHTML = '<i class="fa fa-save ml-2"></i> ذخیره نهایی در فایل';
+    }
+</script>
+</body>
+</html>
