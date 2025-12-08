@@ -30,7 +30,7 @@ let gameState = {
 
 let players = {};
 let saveTimeout = null;
-let adminUpdateTimeout = null; // Debouncer for admin updates
+let adminUpdateTimeout = null;
 
 // --- LOAD STATE ---
 if (fs.existsSync(DB_FILE)) {
@@ -51,7 +51,6 @@ app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.ht
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/presenter', (req, res) => res.sendFile(path.join(__dirname, 'public', 'presenter.html')));
 
-// --- PERSISTENCE (Throttled) ---
 function saveState() {
     if (saveTimeout) return;
     saveTimeout = setTimeout(() => {
@@ -63,18 +62,23 @@ function saveState() {
     }, 2000);
 }
 
-// --- ADMIN LIVE UPDATE (The "Casino" Fix) ---
-// Sends full state to admin max once every 100ms (10fps).
-// This makes it feel instant but prevents network flooding.
+function getAliveCount() {
+    return Object.values(players).filter(p => p.isAlive).length;
+}
+
+// --- ADMIN LIVE UPDATE (FIXED) ---
 function dispatchAdminUpdate() {
     if (adminUpdateTimeout) return;
     adminUpdateTimeout = setTimeout(() => {
+        // FIX: Recalculate alive count BEFORE sending to admin
+        // This ensures the top bar updates immediately after a revive
+        gameState.aliveCount = getAliveCount();
+
         io.to('admin_room').emit('admin_data', { players, gameState, allQuestions: QUESTIONS });
         adminUpdateTimeout = null;
     }, 100);
 }
 
-// --- GAME LOOP (1Hz Pulse for Clients) ---
 setInterval(() => {
     const now = Date.now();
     let timeRemaining = 0;
@@ -98,10 +102,6 @@ setInterval(() => {
 
 }, 1000);
 
-function getAliveCount() {
-    return Object.values(players).filter(p => p.isAlive).length;
-}
-
 function startQuestion(index, customDuration = DEFAULT_DURATION) {
     if (index < 0 || index >= QUESTIONS.length) return;
 
@@ -114,7 +114,7 @@ function startQuestion(index, customDuration = DEFAULT_DURATION) {
     Object.values(players).forEach(p => { if(p.isAlive) p.currentAnswer = null; });
 
     saveState();
-    dispatchAdminUpdate(); // Update Admin Immediately
+    dispatchAdminUpdate();
 
     const q = QUESTIONS[index];
     io.emit('new_question', { index, text: q.text, options: q.options, duration: durationSec });
@@ -145,7 +145,7 @@ function endQuestion() {
     gameState.aliveCount = getAliveCount();
 
     saveState();
-    dispatchAdminUpdate(); // Update Admin Immediately
+    dispatchAdminUpdate();
 
     io.emit('reveal_answer', {
         correctIndex,
@@ -208,7 +208,6 @@ io.on('connection', (socket) => {
         saveState();
         socket.emit('registered_success', players[data.studentId]);
 
-        // Critical: Notify Admin & Presenter immediately
         dispatchAdminUpdate();
         io.to('presenter_room').emit('stats_update', { totalPlayers: Object.keys(players).length });
     });
@@ -219,10 +218,8 @@ io.on('connection', (socket) => {
         const p = players[socket.studentId];
         if (!p || !p.isAlive) return;
 
-        // Only update if changed
         if (p.currentAnswer !== answerIndex) {
             p.currentAnswer = answerIndex;
-            // Update Admin Live!
             dispatchAdminUpdate();
         }
     });

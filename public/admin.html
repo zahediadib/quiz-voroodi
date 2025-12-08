@@ -12,12 +12,10 @@
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700;900&display=swap');
         body { font-family: 'Sahel', sans-serif; }
 
-        /* Smooth Transitions for Casino Feel */
         .smooth-width { transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .smooth-color { transition: background-color 0.3s ease, color 0.3s ease; }
         .smooth-fade { transition: opacity 0.3s ease; }
 
-        /* Stable Timer Number */
         #adm-timer { font-variant-numeric: tabular-nums; min-width: 80px; display: inline-block; text-align: left; }
     </style>
 </head>
@@ -138,13 +136,12 @@
         document.getElementById('auth-modal').classList.add('hidden');
         document.getElementById('admin-interface').classList.remove('hidden');
         document.getElementById('admin-interface').classList.add('flex');
-        // Initial Fetch Only
         socket.emit('request_admin_data');
     });
 
     socket.on('admin_auth_fail', () => { document.getElementById('auth-modal').classList.remove('hidden'); alert('رمز اشتباه است'); });
 
-    // --- SMOOTH TIMER ---
+    // --- SMOOTH TIMER (FIXED FOR TABLET) ---
     function runSmoothTimer(seconds) {
         if(timerFrame) cancelAnimationFrame(timerFrame);
         const endTime = Date.now() + (seconds * 1000);
@@ -161,15 +158,15 @@
         step();
     }
 
-    // --- PULSE (Check Timer Drift) ---
+    // --- PULSE (With Tablet Jitter Fix) ---
     socket.on('sync_pulse', (data) => {
-        // We do NOT wait for pulse to update stats anymore, data is pushed.
-        // We only check timer drift here.
         if (data.phase === 'QUESTION') {
             const serverTime = parseFloat(data.time);
             const currentDisplay = parseFloat(document.getElementById('adm-timer').innerText);
-            // Only correct if drift is significant (> 1s) to avoid jumping
-            if (!timerFrame || Math.abs(currentDisplay - serverTime) > 1.0) {
+
+            // INCREASED TOLERANCE TO 2.5s:
+            // This prevents "jumping" on WiFi tablets unless the difference is huge.
+            if (!timerFrame || Math.abs(currentDisplay - serverTime) > 2.5) {
                 runSmoothTimer(serverTime);
             }
         } else {
@@ -180,25 +177,29 @@
         document.getElementById('adm-phase-badge').innerText = data.phase;
     });
 
-    // --- REALTIME DATA PUSH ---
+    // --- HEAVY DATA UPDATE ---
     socket.on('admin_data', (data) => {
         currentPresenterMode = data.gameState.presenterMode;
         savedQuestionStats = data.gameState.questionStats || {};
 
-        document.getElementById('adm-total-count').innerText = Object.keys(data.players).length;
-        document.getElementById('adm-alive-count').innerText = data.gameState.aliveCount;
+        const totalCountEl = document.getElementById('adm-total-count');
+        if(totalCountEl) totalCountEl.innerText = Object.keys(data.players).length;
 
-        // Button State
+        // This will now update correctly after Revive
+        const aliveCountEl = document.getElementById('adm-alive-count');
+        if(aliveCountEl) aliveCountEl.innerText = data.gameState.aliveCount;
+
         const pBtn = document.getElementById('btn-toggle-presenter');
-        if (currentPresenterMode === 'GAME') {
-            pBtn.innerHTML = '<i class="fa-solid fa-gamepad mr-1"></i> نمایش: بازی';
-            pBtn.className = "bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700 w-40 smooth-color";
-        } else {
-            pBtn.innerHTML = '<i class="fa-solid fa-list-ol mr-1"></i> نمایش: لیست';
-            pBtn.className = "bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 w-40 smooth-color";
+        if (pBtn) {
+            if (currentPresenterMode === 'GAME') {
+                pBtn.innerHTML = '<i class="fa-solid fa-gamepad mr-1"></i> نمایش: بازی';
+                pBtn.className = "bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700 w-40 smooth-color";
+            } else {
+                pBtn.innerHTML = '<i class="fa-solid fa-list-ol mr-1"></i> نمایش: لیست';
+                pBtn.className = "bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 w-40 smooth-color";
+            }
         }
 
-        // --- OPTIMIZED TABLE RENDER ---
         const list = document.getElementById('adm-player-list');
         const stats = [0,0,0,0];
         let totalAnswers = 0;
@@ -211,7 +212,10 @@
         });
 
         const existingRows = new Map();
-        list.querySelectorAll('tr').forEach(tr => existingRows.set(tr.id, tr));
+        list.querySelectorAll('tr').forEach(tr => {
+            if(tr.id) existingRows.set(tr.id, tr);
+        });
+
         const newRowsFragment = document.createDocumentFragment();
 
         playersArr.forEach(p => {
@@ -228,6 +232,11 @@
 
             let row = existingRows.get(rowId);
 
+            if (row && !row.querySelector('.name-cell')) {
+                row.remove();
+                row = null;
+            }
+
             if (!row) {
                 row = document.createElement('tr');
                 row.id = rowId;
@@ -242,74 +251,67 @@
                     </td>`;
             }
 
-            // Mark as processed so we don't delete it
             existingRows.delete(rowId);
             newRowsFragment.appendChild(row);
 
-            // DOM Updates (only if changed)
             if(row.className !== bgClass) row.className = bgClass;
 
             const nameCell = row.querySelector('.name-cell');
-            if(nameCell.innerText !== p.name) nameCell.innerText = p.name;
+            if(nameCell && nameCell.innerText !== p.name) nameCell.innerText = p.name;
 
             const idCell = row.querySelector('.id-cell');
-            if(idCell.innerText !== p.studentId) idCell.innerText = p.studentId;
+            if(idCell && idCell.innerText !== p.studentId) idCell.innerText = p.studentId;
 
             const ansCell = row.querySelector('.ans-cell');
-            if(ansCell.innerHTML !== ansDisplay) ansCell.innerHTML = ansDisplay;
+            if(ansCell && ansCell.innerHTML !== ansDisplay) ansCell.innerHTML = ansDisplay;
 
             const statCell = row.querySelector('.status-cell');
-            if(statCell.innerText !== statusText) {
+            if(statCell && statCell.innerText !== statusText) {
                 statCell.innerText = statusText;
                 statCell.className = `p-2 border-b font-bold status-cell ${statusClass}`;
             }
         });
 
-        // Cleanup kicked players
         existingRows.forEach(row => row.remove());
-        // Batch Append (Browser handles moves efficiently)
         list.appendChild(newRowsFragment);
 
-        // --- STATS BAR ANIMATION ---
         const statsBar = document.getElementById('adm-stats-bar');
-        // We rebuild HTML but use CSS for smooth transitions if structure is same
-        let statsHtml = stats.map((count, i) => {
-            const pct = totalAnswers > 0 ? Math.round((count/totalAnswers)*100) : 0;
-            return `
-                <div class="bg-gray-200 rounded p-1 relative overflow-hidden">
-                    <div class="absolute inset-0 bg-blue-100 smooth-width" style="width: ${pct}%; z-index:0;"></div>
-                    <div class="relative z-10">
-                        <span class="font-bold block text-xs">گزینه ${i+1}</span>
-                        <span class="text-blue-800 font-bold">${count}</span>
-                    </div>
-                </div>`;
-        }).join('');
-        statsHtml += `<div class="col-span-4 mt-1 bg-blue-50 border border-blue-200 rounded p-1 text-center"><span class="font-bold text-blue-800">مجموع آرا: ${totalAnswers}</span></div>`;
+        if(statsBar) {
+            let statsHtml = stats.map((count, i) => {
+                const pct = totalAnswers > 0 ? Math.round((count/totalAnswers)*100) : 0;
+                return `
+                    <div class="bg-gray-200 rounded p-1 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-blue-100 smooth-width" style="width: ${pct}%; z-index:0;"></div>
+                        <div class="relative z-10">
+                            <span class="font-bold block text-xs">گزینه ${i+1}</span>
+                            <span class="text-blue-800 font-bold">${count}</span>
+                        </div>
+                    </div>`;
+            }).join('');
+            statsHtml += `<div class="col-span-4 mt-1 bg-blue-50 border border-blue-200 rounded p-1 text-center"><span class="font-bold text-blue-800">مجموع آرا: ${totalAnswers}</span></div>`;
+            if(statsBar.innerHTML !== statsHtml) statsBar.innerHTML = statsHtml;
+        }
 
-        if(statsBar.innerHTML !== statsHtml) statsBar.innerHTML = statsHtml;
-
-        // Button Visibility
         const endBtn = document.getElementById('btn-end-q');
-        if(data.gameState.phase === 'QUESTION') endBtn.classList.remove('hidden');
-        else endBtn.classList.add('hidden');
+        if(endBtn) {
+            if(data.gameState.phase === 'QUESTION') endBtn.classList.remove('hidden');
+            else endBtn.classList.add('hidden');
+        }
 
-        // Questions Data
         if(allQuestions.length === 0 && data.allQuestions) {
             allQuestions = data.allQuestions;
             const sel = document.getElementById('adm-q-select');
-            allQuestions.forEach((q, i) => {
-                const opt = document.createElement('option');
-                opt.value = i; opt.text = `سوال ${i+1}: ${q.text.substring(0,20)}...`; sel.appendChild(opt);
-            });
-            sel.onchange = updatePreview;
-            updatePreview();
+            if(sel) {
+                allQuestions.forEach((q, i) => {
+                    const opt = document.createElement('option');
+                    opt.value = i; opt.text = `سوال ${i+1}: ${q.text.substring(0,20)}...`; sel.appendChild(opt);
+                });
+                sel.onchange = updatePreview;
+                updatePreview();
+            }
         } else if (allQuestions.length > 0) {
             updatePreview();
         }
-    });
-
-    socket.on('stats_update', (data) => {
-        if(data.totalPlayers) document.getElementById('adm-total-count').innerText = data.totalPlayers;
     });
 
     function updatePreview() {
