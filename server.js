@@ -15,7 +15,7 @@ const io = new Server(server, {
 const QUESTIONS = require('./questions.json');
 const DB_FILE = 'game-state.json';
 const PORT = 3000;
-const ADMIN_PASSWORD = "admin";
+const ADMIN_PASSWORD = "zahediadib";
 const DEFAULT_DURATION = 30;
 
 // --- STATE ---
